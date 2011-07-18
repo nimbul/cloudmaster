@@ -38,3 +38,5 @@ rescue
   puts "error #{$!}"
   exit 1
 end
+
+exit 0

@@ -15,15 +15,50 @@ Signal.trap("INT") do
   exit 2
 end
 
+long = false
+filters = []
+options = {}
+
+while ARGV.size > 0
+  if ARGV[0] == '--long'
+    ARGV.shift
+    long = true
+  else
+    filters << Regexp.new(ARGV.shift)
+  end
+end
+
 config = BasicConfiguration.new
 ec2 = AwsContext.instance.ec2(*config.keys)
 begin
   opts = { :owners => [ 'self' ]}
   images = ec2.describe_images(opts)
   images.each do |i|
-    puts "#{i[:id]} #{i[:location]}"
+    if long
+      #  #{i[:]}
+      puts "#{i[:id]} #{i[:location]} #{i[:root_device_type]} #{i[:root_device_name]} #{i[:name]} #{i[:description]}"
+      bdms = i[:block_device_mapping]
+      next if bdms.nil?
+      bdms.each do |m|
+        o = []
+        o << (m[:no_device] ? 'nodevice' : 'device')
+        o << m[:device_name]
+        o << m[:virtual_name]
+        ebs = m[:ebs]
+        unless ebs.nil?
+          o << ebs[:snapshot_id]
+          o << ebs[:volume_size]
+          o << "delete_on_termination" if ebs[:delete_on_termination]
+        end
+        puts o.join(':')
+      end
+    else
+      puts "#{i[:id]} #{i[:location]}"
+    end
   end
 rescue
   puts "error #{$!}"
   exit 1
 end
+
+exit 0

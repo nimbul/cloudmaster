@@ -13,7 +13,8 @@ class EC2
   include AWS # Include the AWS module as a mixin
 
   ENDPOINT_URI = URI.parse("https://ec2.amazonaws.com/")
-  API_VERSION = '2009-08-15'
+  #API_VERSION = '2009-08-15'
+  API_VERSION = '2011-05-15'
   SIGNATURE_VERSION = '2'
 
   HTTP_METHOD = 'POST' # 'GET'
@@ -272,8 +273,45 @@ class EC2
         :owner_id => image.elements['imageOwnerId'].text,
         :is_public => image.elements['isPublic'].text == 'true',
         :architecture => image.elements['architecture'].text,
-        :type => image.elements['imageType'].text
+        :type => image.elements['imageType'].text,
       }
+
+      #
+      # new fields in ec2 api: name, description, rootDeviceName and rootDeviceType
+      #
+      if image.elements['name']
+        image_details[:name] = image.elements['name'].text
+      end
+      
+      if image.elements['description']
+        image_details[:description] = image.elements['description'].text
+      end
+      
+      if image.elements['rootDeviceName']
+        image_details[:root_device_name] = image.elements['rootDeviceName'].text
+      end
+      
+      if image.elements['rootDeviceType']
+        image_details[:root_device_type] = image.elements['rootDeviceType'].text
+      end
+
+      #
+      # fill out block device mapping
+      #
+      block_device_mapping = []
+      image.elements.each('blockDeviceMapping/item') do |mapping|
+        m = {}
+        m[:device_name] = mapping.elements['deviceName'].text if mapping.elements['deviceName']
+        m[:virtual_name] = mapping.elements['virtualName'].text if mapping.elements['virtualName']
+        m[:no_device] = !mapping.elements['noDevice'].nil?
+        ebs = {}
+        ebs[:snapshot_id] = mapping.elements['ebs/snapshotId'].text if mapping.elements['ebs/snapshotId']
+        ebs[:volume_size] = mapping.elements['ebs/volumeSize'].text if mapping.elements['ebs/volumeSize']
+        ebs[:delete_on_termination] = (mapping.elements['ebs/deleteOnTermination'] and mapping.elements['ebs/deleteOnTermination'].text == 'true')
+        m[:ebs] = ebs
+        block_device_mapping << m
+      end
+      image_details[:block_device_mapping] = block_device_mapping
       
       # Items only available when listing 'machine' image types
       # that have associated kernel and ramdisk metadata
