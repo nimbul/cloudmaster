@@ -448,7 +448,7 @@ class EC2
       end
 
       security_groups << {
-        :api_name => sec_group.elements['groupId'].text,
+        :group_id => sec_group.elements['groupId'].text,
         :name => sec_group.elements['groupName'].text,
         :description => sec_group.elements['groupDescription'].text,
         :owner_id => sec_group.elements['ownerId'].text,
@@ -491,16 +491,24 @@ class EC2
     return true
   end
 
-  def create_security_group(group_name, group_description=group_name)
+  def create_security_group(group_name, group_description=group_name, vpc_id=nil)
     parameters = build_query_params(API_VERSION, SIGNATURE_VERSION,
       {
       'Action' => 'CreateSecurityGroup',
       'GroupName' => group_name,
       'GroupDescription' => group_description,
       })
+    parameters['VpcId'] = vpc_id
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    return true
+    xml_doc = REXML::Document.new(response.body)
+
+    group = {
+      :group_id => xml_doc.elements['//groupId'].text,
+      :return => (xml_doc.elements['//return'].text == 'true'),
+    }
+
+    return group
   end
 
   def delete_security_group(group_name)

@@ -22,8 +22,8 @@ end
 config = BasicConfiguration.new
 ec2 = AwsContext.instance.ec2(*config.keys)
 begin
-  ec2.create_security_group(name, description)
-  puts "created group"
+  group = ec2.create_security_group(name, description)
+  puts "created group[:group_id]"
 rescue
   puts "error #{$!} #{name}"
   exit 1
