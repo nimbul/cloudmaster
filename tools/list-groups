@@ -31,7 +31,7 @@ begin
   groups.each do |group|
     if group[:name] =~ filter
       puts
-      puts "#{group[:name]} -- #{group[:description]}"
+      puts "#{group[:name]} -- #{group[:description]} -- #{group[:api_name]}"
       grants = group[:grants]
   
       # grab all IP based grant statements

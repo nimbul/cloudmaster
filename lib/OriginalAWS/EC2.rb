@@ -448,6 +448,7 @@ class EC2
       end
 
       security_groups << {
+        :api_name => sec_group.elements['groupId'].text,
         :name => sec_group.elements['groupName'].text,
         :description => sec_group.elements['groupDescription'].text,
         :owner_id => sec_group.elements['ownerId'].text,
