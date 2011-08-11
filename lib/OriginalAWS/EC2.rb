@@ -523,11 +523,18 @@ class EC2
   end
 
 
-  def register_image(image_location)
+  def register_image(image_location, options={})
     parameters = build_query_params(API_VERSION, SIGNATURE_VERSION,
       {
       'Action' => 'RegisterImage',
       'ImageLocation' => image_location,
+      'Name' => options[:name],
+      'Description' => options[:description],
+      'Architecture' => options[:architecture],
+      'KernelId' => options[:kernel_id],
+      'RamdiskId' => options[:ramdisk_id],
+      'RootDeviceName' => options[:root_device_name],
+      'BlockDeviceMapping' => options[:block_device_mapping],
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)

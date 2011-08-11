@@ -11,6 +11,8 @@ require 'pp'
 if ARGV[0] == '-?' || ARGV.size != 1 then
 	puts "usage: get-queue-permissions queue [account_id]"
 	exit 1
+elsif ARGV[0] == '--long'
+	long = true
 end
 
 name=ARGV[0]
@@ -52,6 +54,7 @@ begin
 			printf("| %-#{max_plength}s | %-#{max_alength}s |\n", p, a)
 			puts divider
 		end
+                pp perms
 	end
 rescue
 	puts "error #{$!} #{name}"
