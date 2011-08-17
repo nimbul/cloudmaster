@@ -56,18 +56,11 @@ class EC2
         :state => elems['instanceState/name'].text,
         :private_dns => elems['privateDnsName'].text,
         :public_dns => elems['dnsName'].text,
-        :type => elems['instanceType'].text,
-        :launch_time => elems['launchTime'].text
       }
 
       item[:reason] = elems['reason'].text if elems['reason']
       item[:key_name] = elems['keyName'].text if elems['keyName']
       item[:index] = elems['amiLaunchIndex'].text if elems['amiLaunchIndex']
-      if elems['placement']
-        item[:zone] = elems['placement/availabilityZone'].text
-      end
-      item[:kernel_id] = elems['kernelId'].text if elems['kernelId']
-      item[:ramdisk_id] = elems['ramdiskId'].text if elems['ramdiskId']
 
       if elems['productCodes']
         item[:product_codes] = []
@@ -75,6 +68,28 @@ class EC2
           item[:product_codes] << code.text
         end
       end
+
+      item[:type] = elems['instanceType'].text if elems['instanceType']
+      item[:launch_time] = elems['launchTime'].text if elems['launchTime']
+
+      if elems['placement']
+        item[:zone] = elems['placement/availabilityZone'].text
+      end
+      item[:kernel_id] = elems['kernelId'].text if elems['kernelId']
+      item[:ramdisk_id] = elems['ramdiskId'].text if elems['ramdiskId']
+
+      item[:platform] = elems['platform'].text if elems['platform']
+      item[:monitoring] = elems['monitoring/state'].text if elems['monitoring/state']
+      item[:subnet_id] = elems['subnetId'].text if elems['subnetId']
+      item[:vpc_id] = elems['vpcId'].text if elems['vpcId']
+      item[:private_ip] = elems['privateIpAddress'].text if elems['privateIpAddress']
+      item[:public_ip] = elems['ipAddress'].text if elems['ipAddress']
+      # sourceDestCheck
+      # groupSet
+      # stateReason
+      item[:architecture] = elems['architecture'].text if elems['architecture']
+      item[:root_device_type] = elems['rootDeviceType'].text if elems['rootDeviceType']
+      item[:root_device_name] = elems['rootDeviceName'].text if elems['rootDeviceName']
 
       reservation[:instances] << item
     end
@@ -384,6 +399,29 @@ class EC2
       {
       'Action' => 'StopInstances',
       'Force' => force,
+      },{
+      'InstanceId' => instance_ids,
+      })
+
+    response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
+    xml_doc = REXML::Document.new(response.body)
+
+    instances = []
+    xml_doc.elements.each('//instancesSet/item') do |item|
+      instances << {
+        :id => item.elements['instanceId'].text,
+        :state => item.elements['currentState/name'].text,
+        :previous_state => item.elements['previousState/name'].text
+      }
+    end
+
+    return instances
+  end
+
+  def start_instances(instance_ids)
+    parameters = build_query_params(API_VERSION, SIGNATURE_VERSION,
+      {
+      'Action' => 'StartInstances',
       },{
       'InstanceId' => instance_ids,
       })
