@@ -379,7 +379,7 @@ class EC2
     return instances
   end
 
-  def stop_instances(*instance_ids, force=nil)
+  def stop_instances(instance_ids, force=nil)
     parameters = build_query_params(API_VERSION, SIGNATURE_VERSION,
       {
       'Action' => 'StopInstances',
