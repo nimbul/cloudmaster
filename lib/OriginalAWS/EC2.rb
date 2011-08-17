@@ -371,7 +371,31 @@ class EC2
     xml_doc.elements.each('//instancesSet/item') do |item|
       instances << {
         :id => item.elements['instanceId'].text,
-        :state => item.elements['shutdownState/name'].text,
+        :state => item.elements['currentState/name'].text,
+        :previous_state => item.elements['previousState/name'].text
+      }
+    end
+
+    return instances
+  end
+
+  def stop_instances(*instance_ids, force=nil)
+    parameters = build_query_params(API_VERSION, SIGNATURE_VERSION,
+      {
+      'Action' => 'StopInstances',
+      'Force' => force,
+      },{
+      'InstanceId' => instance_ids,
+      })
+
+    response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
+    xml_doc = REXML::Document.new(response.body)
+
+    instances = []
+    xml_doc.elements.each('//instancesSet/item') do |item|
+      instances << {
+        :id => item.elements['instanceId'].text,
+        :state => item.elements['currentState/name'].text,
         :previous_state => item.elements['previousState/name'].text
       }
     end
