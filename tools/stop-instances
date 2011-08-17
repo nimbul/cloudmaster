@@ -1,0 +1,41 @@
+#!/usr/bin/ruby
+$:.unshift File.join(File.dirname(__FILE__))
+require 'AWS/EC2'
+require 'basic_configuration'
+require 'aws_context'
+require 'pp'
+
+# Stop the given instance(s).
+
+if ARGV[0] == '-?' || ARGV[0] == '-h' || ARGV[0] == '--help' || ARGV.size < 1 then
+  puts "usage: stop-instances [-f|--force] instance-id[,instance-id[,...]]"
+  exit 1
+end
+
+force = nil
+instance_ids = []
+while ARGV.size > 0
+  if ARGV[0] == '--force' || ARGV[0] == '-f'
+    force = true
+    ARGV.shift
+  else
+    instance_ids = ARGV[0].split(',')
+    ARGV.shift
+  end
+end
+
+Signal.trap("INT") do
+  exit 2
+end
+
+config = BasicConfiguration.new
+ec2 = AwsContext.instance.ec2(*config.keys)
+begin
+  instances = ec2.stop_instances(instance_ids, force)
+  instances.each {|i| puts "stopping #{i[:id]}\t#{i[:state]}"}
+rescue
+  puts "not stopping #{instance_ids.join(',')}: #{$!}"
+  exit 1
+end
+
+exit 0
