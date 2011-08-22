@@ -495,10 +495,10 @@ class EC2
         grant[:to_port] = item.elements['toPort'].text if item.elements['toPort']
 
         item.elements.each('groups/item') do |group|
-          (grant[:groups] ||= []) << {
-            :user_id => group.elements['userId'].text,
-            :name => group.elements['groupName'].text
-          }
+          g = {}
+          g[:user_id] = group.elements['userId'].text if group.elements['userId']
+          g[:name] = group.elements['groupName'].text if group.elements['groupName']
+          (grant[:groups] ||= []) << g
         end
 
         item.elements.each('ipRanges/item') do |iprange|
