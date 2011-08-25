@@ -489,17 +489,16 @@ class EC2
     xml_doc.elements.each('//securityGroupInfo/item') do |sec_group|
       grants = []
       sec_group.elements.each('ipPermissions/item') do |item|
-        grant = {
-          :protocol => item.elements['ipProtocol'].text,
-          :from_port => item.elements['fromPort'].text,
-          :to_port => item.elements['toPort'].text
-        }
+        grant = {}
+        grant[:protocol] = item.elements['ipProtocol'].text if item.elements['ipProtocol']
+        grant[:from_port] = item.elements['fromPort'].text if item.elements['fromPort']
+        grant[:to_port] = item.elements['toPort'].text if item.elements['toPort']
 
         item.elements.each('groups/item') do |group|
-          (grant[:groups] ||= []) << {
-            :user_id => group.elements['userId'].text,
-            :name => group.elements['groupName'].text
-          }
+          g = {}
+          g[:user_id] = group.elements['userId'].text if group.elements['userId']
+          g[:name] = group.elements['groupName'].text if group.elements['groupName']
+          (grant[:groups] ||= []) << g
         end
 
         item.elements.each('ipRanges/item') do |iprange|
