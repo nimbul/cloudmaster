@@ -39,8 +39,8 @@ begin
     else
       exit 0
     end
-    ec2.deregister_image(image_id)
   end
+  res = ec2.deregister_image(image_id)
 rescue
   puts "error #{$!} #{name}"
   exit 1
