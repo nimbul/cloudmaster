@@ -21,14 +21,16 @@ group = config.aws[:aws_group]
 group = 'default' if group.nil? 
 
 if ARGV[0] == '-?' || ARGV.size < 1
-  puts "usage: start-instance image-id|image-name [security-group]"
+  puts "usage: start-instance [--large] image-id [security-group]"
+  puts "usage: start-instance [--large] image-name [security-group]"
+  puts "usage: start-instance instance-id[,instance-id[,...]]"
   exit 1
 end
 
 # Check for large instance: 
 instance_size = nil
 if ARGV[0] == "--large"
-	instance_size = ARGV.shift	
+  instance_size = ARGV.shift  
 end
 
 name=ARGV[0]
@@ -46,6 +48,9 @@ ec2 = AwsContext.instance.ec2(*config.keys)
 begin
   if name =~ /^ami-/
     instances = ec2.run_instances(name, 1, 1, opts)
+  elsif name =~ /^i-/
+    instance_ids = name.split(',')
+    instances = ec2.start_instances(instance_ids)
   else
     images = ec2.describe_images
     #pp images
@@ -75,7 +80,11 @@ begin
   end
   #pp instances
   unless instances.nil? 
-    instances[:instances].each {|o| puts "#{o[:id]}"}
+    if instances.is_a?(Array)
+      instances.each {|r| puts "#{r[:id]} #{r[:state]}"}
+    else
+      instances[:instances].each {|o| puts "#{o[:id]}"}
+    end
   end
 rescue
   puts "not started #{name} #{$!}"
