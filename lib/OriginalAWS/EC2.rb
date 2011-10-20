@@ -7,7 +7,7 @@
 # service.
 #
 # Extended by Charles Hayden to cover EBS interface extensions.
-require 'AWS'
+require 'AWS/AWS'
 
 class EC2
   include AWS # Include the AWS module as a mixin

@@ -6,7 +6,7 @@
 # The SimpleDB module implements the Query API of the Amazon SimpleDB
 # Service.
 
-require 'AWS'
+require 'AWS/AWS'
 require 'bigdecimal'
 
 class SimpleDB

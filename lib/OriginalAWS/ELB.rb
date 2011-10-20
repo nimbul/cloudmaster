@@ -1,4 +1,4 @@
-require 'AWS'
+require 'AWS/AWS'
 require 'aws_object'
 require 'aws_api_actions'
 

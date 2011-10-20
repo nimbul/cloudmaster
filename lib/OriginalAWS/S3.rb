@@ -4,7 +4,7 @@
 # This code was written for Ruby version 1.8.6 or greater.
 #
 # The S3 module implements the REST API of the Amazon Simple Storage Service.
-require 'AWS'
+require 'AWS/AWS'
 require 'digest/md5'
 
 class S3

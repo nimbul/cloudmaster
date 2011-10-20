@@ -5,7 +5,7 @@
 #
 # The SQS module implements the Query API of the Amazon Simple Queue
 # Service.
-require 'AWS'
+require 'AWS/AWS'
 require 'rubygems'
 require 'json'
 
