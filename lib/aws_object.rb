@@ -1,5 +1,5 @@
 require 'base64'
-require 'AWS'
+require 'AWS/AWS'
 require 'class_level_inheritable_attributes'
 require 'aws_inflector'
 require 'uri'
