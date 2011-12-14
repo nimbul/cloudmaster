@@ -1,2 +1,2 @@
-$:.unshift(File.join(ENV['AWS_HOME'], "lib"))
+$:.unshift(File.join(__FILE__, '..', "OriginalAWS"))
 require 'OriginalAWS/AWS'

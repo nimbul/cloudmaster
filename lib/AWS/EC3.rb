@@ -1,4 +1,4 @@
-$:.unshift(File.join(ENV['AWS_HOME'], "lib", "OriginalAWS"))
+$:.unshift(File.join(__FILE__, '..', "OriginalAWS"))
 require 'OriginalAWS/EC3'
 
 module AWS
