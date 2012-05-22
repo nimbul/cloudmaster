@@ -1,3 +1,4 @@
+# require 'nokogiri'
 # Sample Ruby code for the O'Reilly book "Programming Amazon Web
 # Services" by James Murty.
 #
@@ -90,11 +91,11 @@ module AWS
       # to the overall descriptive message
       if @response.body and
         @response.body.respond_to?(:index)
-        @aws_error_xml = REXML::Document.new(@response.body)
+        @aws_error_xml = Nokogiri.XML(@response.body)
 
         begin
-            aws_error_code = @aws_error_xml.elements['//Code'].text unless @aws_error_xml.elements['//Code'].nil?
-            aws_error_message = @aws_error_xml.elements['//Message'].text unless @aws_error_xml.elements['//Message'].nil?
+            aws_error_code = @aws_error_xml.at('Code').text unless @aws_error_xml.at('Code').nil?
+            aws_error_message = @aws_error_xml.at('Message').text unless @aws_error_xml.at('Message').nil?
         rescue
             message += ", Failed to parse response: #{$!}"
         end
@@ -482,7 +483,7 @@ module AWS
       puts "Request Body Data:"
       if headers['Content-Type'] == 'application/xml'
         # Pretty-print XML data
-        REXML::Document.new(data).write($stdout, 2)
+        puts Nokogiri.XML(data).to_xml
       else
         puts data
       end
@@ -508,7 +509,7 @@ module AWS
       puts "Body:"
       if response.body.index('<?xml') == 0
         # Pretty-print XML data
-        REXML::Document.new(response.body).write($stdout)
+        puts Nokogiri.XML(response.body).to_xml
       else
         puts response.body
       end

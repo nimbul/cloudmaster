@@ -74,8 +74,8 @@ class S3
     response = do_rest('GET', uri)
     buckets = []
 
-    xml_doc = REXML::Document.new(response.body)
-    xml_doc.elements['//Owner/ID'].text
+    xml_doc = Nokogiri.XML(response.body)
+    xml_doc.at('Owner/ID').text
   end
 
   def list_buckets
@@ -83,18 +83,18 @@ class S3
     response = do_rest('GET', uri)
     buckets = []
 
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
-    xml_doc.elements.each('//Buckets/Bucket') do |bucket|
+    xml_doc.search('Buckets/Bucket').each do |bucket|
       buckets << {
-        :name => bucket.elements['Name'].text,
-        :creation_date => bucket.elements['CreationDate'].text
+        :name => bucket.at('Name').text,
+        :creation_date => bucket.at('CreationDate').text
       }
     end
 
     return {
-      :owner_id => xml_doc.elements['//Owner/ID'].text,
-      :display_name => xml_doc.elements['//Owner/DisplayName'].text,
+      :owner_id => xml_doc.at('Owner/ID').text,
+      :display_name => xml_doc.at('Owner/DisplayName').text,
       :buckets => buckets
     }
   end
@@ -103,10 +103,13 @@ class S3
     uri = generate_s3_uri(bucket_name)
 
     if location
-      xml_doc = REXML::Document.new("<CreateBucketConfiguration/>")
-      xml_doc.root.add_attribute('xmlns', XMLNS)
-      xml_doc.root.add_element('LocationConstraint').text = location
-      do_rest('PUT', uri, xml_doc.to_s, {'Content-Type'=>'text/xml'})
+      xml_doc = Nokogiri::XML::Builder.new { |xml|
+        xml.CreateBucketConfiguration( 'xmlns' => XMLNS ) {
+          xml.LocationConstraint location
+        }
+      }
+      puts xml_doc.to_xml
+      do_rest('PUT', uri, xml_doc.to_xml, {'Content-Type'=>'text/xml'})
     else
       do_rest('PUT', uri)
     end
@@ -124,8 +127,8 @@ class S3
     uri = generate_s3_uri(bucket_name, '', [:location=>nil])
     response = do_rest('GET', uri)
 
-    xml_doc = REXML::Document.new(response.body)
-    return xml_doc.elements['LocationConstraint'].text
+    xml_doc = Nokogiri.XML(response.body)
+    return xml_doc.at('LocationConstraint').text
   end
 
   def list_objects(bucket_name, *params)
@@ -138,44 +141,44 @@ class S3
       uri = generate_s3_uri(bucket_name, '', params)
       response = do_rest('GET', uri)
 
-      xml_doc = REXML::Document.new(response.body)
+      xml_doc = Nokogiri.XML(response.body)
 
-      xml_doc.elements.each('//Contents') do |contents|
+      xml_doc.search('Contents').each do |contents|
         # for keys shared by others - Owner element is not set
         begin
-            owner_id = contents.elements['Owner/ID'].text
-            owner_name = contents.elements['Owner/DisplayName'].text
+            owner_id = contents.at('Owner/ID').text
+            owner_name = contents.at('Owner/DisplayName').text
         rescue
             owner_id = nil
             owner_name = nil
         end
         objects << {
-          :key => contents.elements['Key'].text,
-          :size => contents.elements['Size'].text,
-          :last_modified => contents.elements['LastModified'].text,
-          :etag => contents.elements['ETag'].text,
+          :key => contents.at('Key').text,
+          :size => contents.at('Size').text,
+          :last_modified => contents.at('LastModified').text,
+          :etag => contents.at('ETag').text,
           :owner_id => owner_id,
           :owner_name => owner_name
         }
       end
 
-      cps = xml_doc.elements.to_a('//CommonPrefixes')
+      cps = xml_doc.search('CommonPrefixes')
       if cps.length > 0
         cps.each do |cp|
-          prefixes << cp.elements['Prefix'].text
+          prefixes << cp.at('Prefix').text
         end
       end
 
       # Determine whether listing is truncated
-      is_truncated = 'true' == xml_doc.elements['//IsTruncated'].text
+      is_truncated = 'true' == xml_doc.at('IsTruncated').text
 
       # Remove any existing marker value
       params.delete_if {|p| p[:marker]}
 
       # Set the marker parameter to the NextMarker if possible,
       # otherwise set it to the last key name in the listing
-      next_marker_elem = xml_doc.elements['//NextMarker']
-      last_key_elem = xml_doc.elements['//Contents/Key[last()]']
+      next_marker_elem = xml_doc.at('NextMarker')
+      last_key_elem = xml_doc.at('Contents/Key[last()]')
 
       if next_marker_elem
         params << {:marker => next_marker_elem.text}
@@ -335,12 +338,12 @@ class S3
     uri = generate_s3_uri(bucket_name, '', [:logging=>nil])
     response = do_rest('GET', uri)
 
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
-    if xml_doc.elements['//LoggingEnabled']
+    if xml_doc.at('LoggingEnabled')
       return {
-        :target_bucket => xml_doc.elements['//TargetBucket'].text,
-        :target_prefix => xml_doc.elements['//TargetPrefix'].text
+        :target_bucket => xml_doc.at('TargetBucket').text,
+        :target_prefix => xml_doc.at('TargetPrefix').text
       }
     else
       # Logging is not enabled
@@ -352,12 +355,13 @@ class S3
                   target_prefix="#{bucket_name}.")
 
     # Build BucketLoggingStatus XML document
-    xml_doc = REXML::Document.new("<BucketLoggingStatus xmlns='#{XMLNS}'/>")
+    xml_doc = Nokogiri.XML("<BucketLoggingStatus xmlns='#{XMLNS}'/>")
 
     if target_bucket
-      logging_enabled = xml_doc.root.add_element('LoggingEnabled')
-      logging_enabled.add_element('TargetBucket').text = target_bucket
-      logging_enabled.add_element('TargetPrefix').text = target_prefix
+      xml_doc.root << '<LoggingEnabled />'
+      logging_enabled = xml_doc.at('LoggingEnabled')
+      logging_enabled << "<TargetBucket>#{target_bucket}</TargetBucket>"
+      logging_enabled << "<TargetPrefix>#{target_prefix}</TargetPrefix>"
     end
 
     uri = generate_s3_uri(bucket_name, '', [:logging=>nil])
@@ -369,31 +373,31 @@ class S3
     uri = generate_s3_uri(bucket_name, object_key, [:acl=>nil])
     response = do_rest('GET', uri)
 
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
     grants = []
 
-    xml_doc.elements.each('//Grant') do |grant|
+    xml_doc.search('Grant').each do |grant|
       grantee = {}
 
-      grantee[:type] = grant.elements['Grantee'].attributes['type']
+      grantee[:type] = grant.at('Grantee')['type']
 
       if grantee[:type] == 'Group'
-        grantee[:uri] = grant.elements['Grantee/URI'].text
+        grantee[:uri] = grant.at('Grantee/URI').text
       else
-        grantee[:id] = grant.elements['Grantee/ID'].text
-        grantee[:display_name] = grant.elements['Grantee/DisplayName'].text
+        grantee[:id] = grant.at('Grantee/ID').text
+        grantee[:display_name] = grant.at('Grantee/DisplayName').text
       end
 
       grants << {
         :grantee => grantee,
-        :permission => grant.elements['Permission'].text
+        :permission => grant.at('Permission').text
       }
     end
 
     return {
-      :owner_id => xml_doc.elements['//Owner/ID'].text,
-      :owner_name => xml_doc.elements['//Owner/DisplayName'].text,
+      :owner_id => xml_doc.at('Owner/ID').text,
+      :owner_name => xml_doc.at('Owner/DisplayName').text,
       :grants => grants
     }
   end
@@ -401,35 +405,49 @@ class S3
   def set_acl(owner_id, bucket_name, object_key='',
               grants=[owner_id=>'FULL_CONTROL'])
 
-    xml_doc = REXML::Document.new("<AccessControlPolicy xmlns='#{XMLNS}'/>")
-    xml_doc.root.add_element('Owner').add_element('ID').text = owner_id
-    grant_list = xml_doc.root.add_element('AccessControlList')
+    xml_doc = Nokogiri.XML("<AccessControlPolicy xmlns='#{XMLNS}'/>")
+    xml_doc.root << '<Owner />'
+    xml_doc.at('Owner') << "<ID>#{owner_id}</ID>"
+    xml_doc.root << '<AccessControlList />'
+    grant_list = xml_doc.at('AccessControlList')
 
     grants.each do |hash|
       hash.each do |grantee_id, permission|
 
-        grant = grant_list.add_element('Grant')
-        grant.add_element('Permission').text = permission
+        grant = grant_list.add_child('<Grant />').at('Grant')
+        grant << "<Permission>#{permission}</Permission>"
 
         # Grantee may be of type email, group, or canonical user
         if grantee_id.index('@')
           # Email grantee
-          grantee = grant.add_element('Grantee',
-            {'xmlns:xsi'=>'http://www.w3.org/2001/XMLSchema-instance',
-             'xsi:type'=>'AmazonCustomerByEmail'})
-          grantee.add_element('EmailAddress').text = grantee_id
+          grant << Nokogiri::XML::Builder.new { |xml|
+            xml.Grantee(
+                'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+                'xsi:type'=>'AmazonCustomerByEmail'
+            ) {
+              xml.EmailAddress grantee_id
+            }
+          }
         elsif grantee_id.index('://')
           # Group grantee
-          grantee = grant.add_element('Grantee',
-            {'xmlns:xsi'=>'http://www.w3.org/2001/XMLSchema-instance',
-             'xsi:type'=>'Group'})
-          grantee.add_element('URI').text = grantee_id
+          grant << Nokogiri::XML::Builder.new { |xml|
+            xml.Grantee(
+                'xmlns:xsi'=>'http://www.w3.org/2001/XMLSchema-instance',
+                'xsi:type'=>'Group'
+            ) {
+              xml.URI grantee_id
+            }
+          }
         else
           # Canonical user grantee
-          grantee = grant.add_element('Grantee',
-            {'xmlns:xsi'=>'http://www.w3.org/2001/XMLSchema-instance',
-             'xsi:type'=>'CanonicalUser'})
-          grantee.add_element('ID').text = grantee_id
+          grant << Nokogiri::XML::Builder.new { |xml|
+            xml.Grantee(
+                'xmlns:xsi'=>'http://www.w3.org/2001/XMLSchema-instance',
+                'xsi:type'=>'CanonicalUser'
+            ) {
+              xml.id_ grantee_id
+            }
+          }
         end
       end
     end

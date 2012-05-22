@@ -34,9 +34,9 @@ module MockAWS
       if @@messages[queue_url] == []
         []
       else
-        visible = @@messages[queue_url].find_all {|m| m[:visible]}
-        @@log.puts "***** receiving #{visible.first[:id]} #{visible.first[:body]}"
-        [visible.first]
+        msg = @@messages[queue_url].slice(@@messages[queue_url].index {|m| m[:visible]})
+        @@log.puts "***** receiving #{msg[:id]} #{msg[:body]}"
+        [msg]
       end
     end
 
@@ -52,8 +52,8 @@ module MockAWS
       true
     end
 
-    def delete_message(queue_url, receipt_handle)
-      @@messages[queue_url] = @@messages[queue_url].reject {|m| m[:receipt_handle] == receipt_handle}
+    def delete_message(queue_url, id)
+      @@messages[queue_url] = @@messages[queue_url].reject {|m| m[:id] == id}
       true
     end
 

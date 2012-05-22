@@ -1,3 +1,5 @@
+require 'nokogiri'
+
 # Sample Ruby code for the O'Reilly book "Programming Amazon Web
 # Services" by James Murty.
 #
@@ -21,75 +23,75 @@ class EC2
 
   def parse_reserved_instance(elem)
     instance = {
-      :reserved_instances_id => elem.elements['reservedInstancesId'].text,
-      :instance_type => elem.elements['instanceType'].text,
-      :zone => elem.elements['availabilityZone'].text,
-      :start => elem.elements['start'].text,
-      :duration => elem.elements['duration'].text,
-      :fixed_price => elem.elements['fixedPrice'].text,
-      :usage_price => elem.elements['usagePrice'].text,
-      :count => elem.elements['instanceCount'].text,
-      :description => elem.elements['productDescription'].text,
-      :state => elem.elements['state'].text,
+      :reserved_instances_id => elem.at('reservedInstancesId').text,
+      :instance_type => elem.at('instanceType').text,
+      :zone => elem.at('availabilityZone').text,
+      :start => elem.at('start').text,
+      :duration => elem.at('duration').text,
+      :fixed_price => elem.at('fixedPrice').text,
+      :usage_price => elem.at('usagePrice').text,
+      :count => elem.at('instanceCount').text,
+      :description => elem.at('productDescription').text,
+      :state => elem.at('state').text,
     }
     return instance
   end
 
   def parse_reservation(elem)
     reservation = {
-      :reservation_id => elem.elements['reservationId'].text,
-      :owner_id => elem.elements['ownerId'].text,
+      :reservation_id => elem.at('reservationId').text,
+      :owner_id => elem.at('ownerId').text,
     }
 
     group_names = []
-    elem.elements.each('groupSet/item') do |group|
-      group_names << group.elements['groupId'].text
+    elem.search('groupSet/item').each do |group|
+      group_names << group.at('groupId').text
     end
     reservation[:groups] = group_names
 
     reservation[:instances] = []
-    elem.elements.each('instancesSet/item') do |instance|
+    elem.search('instancesSet/item').each do |instance|
       elems = instance.elements
       item = {
-        :id => elems['instanceId'].text,
-        :image_id => elems['imageId'].text,
-        :state => elems['instanceState/name'].text,
-        :private_dns => elems['privateDnsName'].text,
-        :public_dns => elems['dnsName'].text,
+        :id => elems.at('instanceId').text,
+        :image_id => elems.at('imageId').text,
+        :state => elems.at('instanceState/name').text,
+        :private_dns => elems.at('privateDnsName').text,
+        :public_dns => elems.at('dnsName').text,
       }
 
-      item[:reason] = elems['reason'].text if elems['reason']
-      item[:key_name] = elems['keyName'].text if elems['keyName']
-      item[:index] = elems['amiLaunchIndex'].text if elems['amiLaunchIndex']
+      item[:reason] = elems.at('reason').text if elems.at('reason')
+      item[:key_name] = elems.at('keyName').text if elems.at('keyName')
+      item[:index] = elems.at('amiLaunchIndex').text if elems.at('amiLaunchIndex')
 
-      if elems['productCodes']
+      if elems.at('productCodes')
         item[:product_codes] = []
         elems.each('productCodes/item/productCode') do |code|
           item[:product_codes] << code.text
         end
       end
 
-      item[:type] = elems['instanceType'].text if elems['instanceType']
-      item[:launch_time] = elems['launchTime'].text if elems['launchTime']
+      item[:type] = elems.at('instanceType').text if elems.at('instanceType')
+      item[:launch_time] = elems.at('launchTime').text if elems.at('launchTime')
 
-      if elems['placement']
-        item[:zone] = elems['placement/availabilityZone'].text
+      if elems.at('placement')
+        item[:zone] = elems.at('placement/availabilityZone').text
       end
-      item[:kernel_id] = elems['kernelId'].text if elems['kernelId']
-      item[:ramdisk_id] = elems['ramdiskId'].text if elems['ramdiskId']
+      item[:kernel_id] = elems.at('kernelId').text if elems.at('kernelId')
+      item[:ramdisk_id] = elems.at('ramdiskId').text if elems.at('ramdiskId')
 
-      item[:platform] = elems['platform'].text if elems['platform']
-      item[:monitoring] = elems['monitoring/state'].text if elems['monitoring/state']
-      item[:subnet_id] = elems['subnetId'].text if elems['subnetId']
-      item[:vpc_id] = elems['vpcId'].text if elems['vpcId']
-      item[:private_ip] = elems['privateIpAddress'].text if elems['privateIpAddress']
-      item[:public_ip] = elems['ipAddress'].text if elems['ipAddress']
+      item[:platform] = elems.at('platform').text if elems.at('platform')
+      item[:monitoring] = elems.at('monitoring/state').text if elems.at('monitoring/state')
+      item[:subnet_id] = elems.at('subnetId').text if elems.at('subnetId')
+      item[:vpc_id] = elems.at('vpcId').text if elems.at('vpcId')
+      item[:private_ip] = elems.at('privateIpAddress').text if elems.at('privateIpAddress')
+      item[:public_ip] = elems.at('ipAddress').text if elems.at('ipAddress')
       # sourceDestCheck
       # groupSet
       # stateReason
-      item[:architecture] = elems['architecture'].text if elems['architecture']
-      item[:root_device_type] = elems['rootDeviceType'].text if elems['rootDeviceType']
-      item[:root_device_name] = elems['rootDeviceName'].text if elems['rootDeviceName']
+      item[:architecture] = elems.at('architecture').text if elems.at('architecture')
+      item[:root_device_type] = elems.at('rootDeviceType').text if elems.at('rootDeviceType')
+      item[:root_device_name] = elems.at('rootDeviceName').text if elems.at('rootDeviceName')
 
       reservation[:instances] << item
     end
@@ -99,21 +101,21 @@ class EC2
 
   def parse_volume(elem)
     volume = {
-      :volume_id => elem.elements['volumeId'].text,
-      :size => elem.elements['size'].text,
-      :status => elem.elements['status'].text,
-      :create_time => elem.elements['createTime'].text,
-      :snapshot_id => elem.elements['snapshotId'].text,
-      :availability_zone => elem.elements['availabilityZone'].text,
+      :volume_id => elem.at('volumeId').text,
+      :size => elem.at('size').text,
+      :status => elem.at('status').text,
+      :create_time => elem.at('createTime').text,
+      :snapshot_id => elem.at('snapshotId').text,
+      :availability_zone => elem.at('availabilityZone').text,
     }
     attachments = []
-    elem.elements.each('attachmentSet/item') do |attachment|
+    elem.search('attachmentSet/item').each do |attachment|
       attachments << {
-        :volume_id => attachment.elements['volumeId'].text,
-        :instance_id => attachment.elements['instanceId'].text,
-        :device => attachment.elements['device'].text,
-        :status => attachment.elements['status'].text,
-        :attach_time => attachment.elements['attachTime'].text
+        :volume_id => attachment.at('volumeId').text,
+        :instance_id => attachment.at('instanceId').text,
+        :device => attachment.at('device').text,
+        :status => attachment.at('status').text,
+        :attach_time => attachment.at('attachTime').text
       }
     end
     volume[:attachment_set] = attachments
@@ -129,10 +131,10 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
     reservations = []
-    xml_doc.elements.each('//reservationSet/item') do |elem|
+    xml_doc.search('//reservationSet/item').each do |elem|
       reservations << parse_reservation(elem)
     end
     return reservations
@@ -147,10 +149,10 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
     instances = []
-    xml_doc.elements.each('//reservedInstancesSet/item') do |elem|
+    xml_doc.search('//reservedInstancesSet/item').each do |elem|
       instances << parse_reserved_instance(elem)
     end
     return instances
@@ -170,13 +172,13 @@ class EC2
     end
 
     response = do_query(HTTP_METHOD, endpoint_uri, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
     zones = []
-    xml_doc.elements.each('//availabilityZoneInfo/item') do |elem|
+    xml_doc.search('//availabilityZoneInfo/item').each do |elem|
       zones << {
-        :name => elem.elements['zoneName'].text,
-        :state => elem.elements['zoneState'].text
+        :name => elem.at('zoneName').text,
+        :state => elem.at('zoneState').text
       }
     end
     return zones
@@ -191,13 +193,13 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
     regions = []
-    xml_doc.elements.each('//regionInfo/item') do |elem|
+    xml_doc.search('//regionInfo/item').each do |elem|
       regions << {
-        :name => elem.elements['regionName'].text,
-        :endpoint => elem.elements['regionEndpoint'].text
+        :name => elem.at('regionName').text,
+        :endpoint => elem.at('regionEndpoint').text
       }
     end
     return regions
@@ -212,13 +214,13 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
     keypairs = []
-    xml_doc.elements.each('//keySet/item') do |key|
+    xml_doc.search('//keySet/item').each do |key|
       keypairs << {
-        :name => key.elements['keyName'].text,
-        :fingerprint => key.elements['keyFingerprint'].text
+        :name => key.at('keyName').text,
+        :fingerprint => key.at('keyFingerprint').text
       }
     end
 
@@ -233,12 +235,12 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
     keypair = {
-      :name => xml_doc.elements['//keyName'].text,
-      :fingerprint => xml_doc.elements['//keyFingerprint'].text,
-      :material => xml_doc.elements['//keyMaterial'].text
+      :name => xml_doc.at('//keyName').text,
+      :fingerprint => xml_doc.at('//keyFingerprint').text,
+      :material => xml_doc.at('//keyMaterial').text
     }
 
     if autosave
@@ -277,52 +279,52 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
     images = []
-    xml_doc.elements.each('//imagesSet/item') do |image|
+    xml_doc.search('//imagesSet/item').each do |image|
       image_details = {
-        :id => image.elements['imageId'].text,
-        :location => image.elements['imageLocation'].text,
-        :state => image.elements['imageState'].text,
-        :owner_id => image.elements['imageOwnerId'].text,
-        :is_public => image.elements['isPublic'].text == 'true',
-        :architecture => image.elements['architecture'].text,
-        :type => image.elements['imageType'].text,
+        :id => image.at('imageId').text,
+        :location => image.at('imageLocation').text,
+        :state => image.at('imageState').text,
+        :owner_id => image.at('imageOwnerId').text,
+        :is_public => image.at('isPublic').text == 'true',
+        :architecture => image.at('architecture').text,
+        :type => image.at('imageType').text,
       }
 
       #
       # new fields in ec2 api: name, description, rootDeviceName and rootDeviceType
       #
-      if image.elements['name']
-        image_details[:name] = image.elements['name'].text
+      if image.at('name')
+        image_details[:name] = image.at('name').text
       end
       
-      if image.elements['description']
-        image_details[:description] = image.elements['description'].text
+      if image.at('description')
+        image_details[:description] = image.at('description').text
       end
       
-      if image.elements['rootDeviceName']
-        image_details[:root_device_name] = image.elements['rootDeviceName'].text
+      if image.at('rootDeviceName')
+        image_details[:root_device_name] = image.at('rootDeviceName').text
       end
       
-      if image.elements['rootDeviceType']
-        image_details[:root_device_type] = image.elements['rootDeviceType'].text
+      if image.at('rootDeviceType')
+        image_details[:root_device_type] = image.at('rootDeviceType').text
       end
 
       #
       # fill out block device mapping
       #
       block_device_mapping = []
-      image.elements.each('blockDeviceMapping/item') do |mapping|
+      image.search('blockDeviceMapping/item').each do |mapping|
         m = {}
-        m[:device_name] = mapping.elements['deviceName'].text if mapping.elements['deviceName']
-        m[:virtual_name] = mapping.elements['virtualName'].text if mapping.elements['virtualName']
-        m[:no_device] = !mapping.elements['noDevice'].nil?
+        m[:device_name] = mapping.at('deviceName').text if mapping.elements.at('deviceName')
+        m[:virtual_name] = mapping.at('virtualName').text if mapping.elements.at('virtualName')
+        m[:no_device] = !mapping.at('noDevice').nil?
         ebs = {}
-        ebs[:snapshot_id] = mapping.elements['ebs/snapshotId'].text if mapping.elements['ebs/snapshotId']
-        ebs[:volume_size] = mapping.elements['ebs/volumeSize'].text if mapping.elements['ebs/volumeSize']
-        ebs[:delete_on_termination] = (mapping.elements['ebs/deleteOnTermination'] and mapping.elements['ebs/deleteOnTermination'].text == 'true')
+        ebs[:snapshot_id] = mapping.at('ebs/snapshotId').text if mapping.elements.at('ebs/snapshotId')
+        ebs[:volume_size] = mapping.at('ebs/volumeSize').text if mapping.elements.at('ebs/volumeSize')
+        ebs[:delete_on_termination] = (mapping.at('ebs/deleteOnTermination') and mapping.elements.at('ebs/deleteOnTermination').text == 'true')
         m[:ebs] = ebs
         block_device_mapping << m
       end
@@ -330,14 +332,14 @@ class EC2
       
       # Items only available when listing 'machine' image types
       # that have associated kernel and ramdisk metadata
-      if image.elements['kernelId'] 
-        image_details[:kernel_id] = image.elements['kernelId'].text
+      if image.at('kernelId') 
+        image_details[:kernel_id] = image.at('kernelId').text
       end
-      if image.elements['ramdiskId']
-        image_details[:ramdisk_id] = image.elements['ramdiskId'].text
+      if image.at('ramdiskId')
+        image_details[:ramdisk_id] = image.at('ramdiskId').text
       end
       
-      image.elements.each('productCodes/item/productCode') do |code|
+      image.search('productCodes/item/productCode').each do |code|
         image_details[:product_codes] ||= []
         image_details[:product_codes] << code.text
       end
@@ -367,7 +369,7 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
     return parse_reservation(xml_doc.root)
   end
 
@@ -380,14 +382,14 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
     instances = []
-    xml_doc.elements.each('//instancesSet/item') do |item|
+    xml_doc.search('//instancesSet/item').each do |item|
       instances << {
-        :id => item.elements['instanceId'].text,
-        :state => item.elements['currentState/name'].text,
-        :previous_state => item.elements['previousState/name'].text
+        :id => item.at('instanceId').text,
+        :state => item.at('currentState/name').text,
+        :previous_state => item.at('previousState/name').text
       }
     end
 
@@ -404,14 +406,14 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
     instances = []
-    xml_doc.elements.each('//instancesSet/item') do |item|
+    xml_doc.search('//instancesSet/item').each do |item|
       instances << {
-        :id => item.elements['instanceId'].text,
-        :state => item.elements['currentState/name'].text,
-        :previous_state => item.elements['previousState/name'].text
+        :id => item.at('instanceId').text,
+        :state => item.at('currentState/name').text,
+        :previous_state => item.at('previousState/name').text
       }
     end
 
@@ -427,14 +429,14 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
     instances = []
-    xml_doc.elements.each('//instancesSet/item') do |item|
+    xml_doc.search('//instancesSet/item').each do |item|
       instances << {
-        :id => item.elements['instanceId'].text,
-        :state => item.elements['currentState/name'].text,
-        :previous_state => item.elements['previousState/name'].text
+        :id => item.at('instanceId').text,
+        :state => item.at('currentState/name').text,
+        :previous_state => item.at('previousState/name').text
       }
     end
 
@@ -483,36 +485,36 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
     security_groups = []
-    xml_doc.elements.each('//securityGroupInfo/item') do |sec_group|
+    xml_doc.search('//securityGroupInfo/item').each do |sec_group|
       grants = []
-      sec_group.elements.each('ipPermissions/item') do |item|
+      sec_group.search('ipPermissions/item').each do |item|
         grant = {}
-        grant[:protocol] = item.elements['ipProtocol'].text if item.elements['ipProtocol']
-        grant[:from_port] = item.elements['fromPort'].text if item.elements['fromPort']
-        grant[:to_port] = item.elements['toPort'].text if item.elements['toPort']
+        grant[:protocol] = item.at('ipProtocol').text if item.elements.at('ipProtocol')
+        grant[:from_port] = item.at('fromPort').text if item.elements.at('fromPort')
+        grant[:to_port] = item.at('toPort').text if item.elements.at('toPort')
 
-        item.elements.each('groups/item') do |group|
+        item.search('groups/item').each do |group|
           g = {}
-          g[:user_id] = group.elements['userId'].text if group.elements['userId']
-          g[:name] = group.elements['groupName'].text if group.elements['groupName']
+          g[:user_id] = group.at('userId').text if group.elements.at('userId')
+          g[:name] = group.at('groupName').text if group.elements.at('groupName')
           (grant[:groups] ||= []) << g
         end
 
-        item.elements.each('ipRanges/item') do |iprange|
-          (grant[:ip_range] ||= []) << iprange.elements['cidrIp'].text
+        item.search('ipRanges/item').each do |iprange|
+          (grant[:ip_range] ||= []) << iprange.at('cidrIp').text
         end
 
         grants << grant
       end
 
       security_groups << {
-        :group_id => sec_group.elements['groupId'].text,
-        :name => sec_group.elements['groupName'].text,
-        :description => sec_group.elements['groupDescription'].text,
-        :owner_id => sec_group.elements['ownerId'].text,
+        :group_id => sec_group.at('groupId').text,
+        :name => sec_group.at('groupName').text,
+        :description => sec_group.at('groupDescription').text,
+        :owner_id => sec_group.at('ownerId').text,
         :grants => grants
       }
     end
@@ -562,11 +564,11 @@ class EC2
     parameters['VpcId'] = vpc_id
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
     group = {
-      :group_id => xml_doc.elements['//groupId'].text,
-      :return => (xml_doc.elements['//return'].text == 'true'),
+      :group_id => xml_doc.at('//groupId').text,
+      :return => (xml_doc.at('//return').text == 'true'),
     }
 
     return group
@@ -599,9 +601,9 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
-    return xml_doc.elements['//imageId'].text
+    return xml_doc.at('//imageId').text
   end
 
   def deregister_image(image_id)
@@ -624,23 +626,23 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
-    result = {:id => xml_doc.elements['//imageId'].text}
+    result = {:id => xml_doc.at('//imageId').text}
 
-    if xml_doc.elements['//launchPermission']
+    if xml_doc.at('//launchPermission')
       result[:launch_perms_user] = []
       result[:launch_perms_group] = []
-      xml_doc.elements.each('//launchPermission/item') do |lp|
+      xml_doc.search('//launchPermission/item').each do |lp|
         elems = lp.elements
-        result[:launch_perms_group] << elems['group'].text if elems['group']
-        result[:launch_perms_user] << elems['userId'].text if elems['userId']
+        result[:launch_perms_group] << elems.at('group').text if elems.at('group')
+        result[:launch_perms_user] << elems.at('userId').text if elems.at('userId')
       end
     end
 
-    if xml_doc.elements['//productCodes']
+    if xml_doc.at('//productCodes')
       result[:product_codes] = []
-      xml_doc.elements.each('//productCodes/item') do |pc|
+      xml_doc.search('//productCodes/item').each do |pc|
         result[:product_codes] << pc.text
       end
     end
@@ -683,12 +685,12 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    elems = REXML::Document.new(response.body).elements
+    elems = Nokogiri.XML(response.body).elements
 
     return {
-      :id => elems['//instanceId'].text,
-      :timestamp => elems['//timestamp'].text,
-      :output => Base64.decode64(elems['//output'].text).strip
+      :id => elems.at('//instanceId').text,
+      :timestamp => elems.at('//timestamp').text,
+      :output => Base64.decode64(elems.at('//output').text).strip
     }
   end
 
@@ -714,12 +716,12 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    elems = REXML::Document.new(response.body).elements
+    elems = Nokogiri.XML(response.body).elements
 
     result = {
-      :result => elems['//result'].text == true
+      :result => elems.at('//result').text == true
     }
-    result[:owner_id] = elems['//ownerId'].text if elems['//ownerId']
+    result[:owner_id] = elems.at('//ownerId').text if elems.at('//ownerId')
     return result
   end
 
@@ -732,13 +734,13 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
     addresses = []
-    xml_doc.elements.each('//addressesSet/item') do |elem|
+    xml_doc.search('//addressesSet/item').each do |elem|
       addresses << {
-        :public_ip => elem.elements['publicIp'].text,
-        :instance_id => elem.elements['instanceId'].text
+        :public_ip => elem.at('publicIp').text,
+        :instance_id => elem.at('instanceId').text
       }
     end
     return addresses
@@ -751,8 +753,8 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
-    return xml_doc.elements['//publicIp'].text
+    xml_doc = Nokogiri.XML(response.body)
+    return xml_doc.at('//publicIp').text
   end
 
   def release_address(public_ip)
@@ -763,8 +765,8 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
-    return xml_doc.elements['//return'].text == 'true'
+    xml_doc = Nokogiri.XML(response.body)
+    return xml_doc.at('//return').text == 'true'
   end
 
   def associate_address(instance_id, public_ip)
@@ -776,8 +778,8 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
-    return xml_doc.elements['//return'].text == 'true'
+    xml_doc = Nokogiri.XML(response.body)
+    return xml_doc.at('//return').text == 'true'
   end
 
   def disassociate_address(public_ip)
@@ -788,8 +790,8 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
-    return xml_doc.elements['//return'].text == 'true'
+    xml_doc = Nokogiri.XML(response.body)
+    return xml_doc.at('//return').text == 'true'
   end
 
   def create_volume(size, availability_zone)
@@ -801,14 +803,14 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
     res = {}
-    res[:volume_id] = xml_doc.elements['//volumeId'].text
-    res[:size] = xml_doc.elements['//size'].text
-    res[:status] = xml_doc.elements['//status'].text
-    res[:create_time] = xml_doc.elements['//createTime'].text
-    res[:availability_zone] = xml_doc.elements['//availabilityZone'].text
-    res[:snapshot_id] = xml_doc.elements['//snapshotId'].text
+    res[:volume_id] = xml_doc.at('//volumeId').text
+    res[:size] = xml_doc.at('//size').text
+    res[:status] = xml_doc.at('//status').text
+    res[:create_time] = xml_doc.at('//createTime').text
+    res[:availability_zone] = xml_doc.at('//availabilityZone').text
+    res[:snapshot_id] = xml_doc.at('//snapshotId').text
     res
   end
 
@@ -821,14 +823,14 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
     res = {}
-    res[:volume_id] = xml_doc.elements['//volumeId'].text
-    res[:size] = xml_doc.elements['//size'].text
-    res[:status] = xml_doc.elements['//status'].text
-    res[:create_time] = xml_doc.elements['//createTime'].text
-    res[:availability_zone] = xml_doc.elements['//availabilityZone'].text
-    res[:snapshot_id] = xml_doc.elements['//snapshotId'].text
+    res[:volume_id] = xml_doc.at('//volumeId').text
+    res[:size] = xml_doc.at('//size').text
+    res[:status] = xml_doc.at('//status').text
+    res[:create_time] = xml_doc.at('//createTime').text
+    res[:availability_zone] = xml_doc.at('//availabilityZone').text
+    res[:snapshot_id] = xml_doc.at('//snapshotId').text
     res
   end
 
@@ -840,8 +842,8 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
-    return xml_doc.elements['//return'].text == 'true'
+    xml_doc = Nokogiri.XML(response.body)
+    return xml_doc.at('//return').text == 'true'
   end
 
   def describe_volumes(*volume_ids)
@@ -853,9 +855,9 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
     volumes = []
-    xml_doc.elements.each('//volumeSet/item') do |elem|
+    xml_doc.search('//volumeSet/item').each do |elem|
       volumes << parse_volume(elem)
     end
     return volumes
@@ -871,12 +873,12 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
     res = {}
-    res[:volume_id] = xml_doc.elements['//volumeId'].text
-    res[:instance_id] = xml_doc.elements['//instanceId'].text
-    res[:device] = xml_doc.elements['//device'].text
-    res[:status] = xml_doc.elements['//status'].text
+    res[:volume_id] = xml_doc.at('//volumeId').text
+    res[:instance_id] = xml_doc.at('//instanceId').text
+    res[:device] = xml_doc.at('//device').text
+    res[:status] = xml_doc.at('//status').text
     res
   end
 
@@ -891,13 +893,13 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
     res = {}
-    res[:volume_id] = xml_doc.elements['//volumeId'].text
-    res[:instance_id] = xml_doc.elements['//instanceId'].text
-    res[:device] = xml_doc.elements['//device'].text
-    res[:status] = xml_doc.elements['//status'].text
-    res[:attach_time] = xml_doc.elements['//attachTime'].text
+    res[:volume_id] = xml_doc.at('//volumeId').text
+    res[:instance_id] = xml_doc.at('//instanceId').text
+    res[:device] = xml_doc.at('//device').text
+    res[:status] = xml_doc.at('//status').text
+    res[:attach_time] = xml_doc.at('//attachTime').text
     res
   end
 
@@ -910,13 +912,13 @@ class EC2
     parameters = build_query_params(API_VERSION, SIGNATURE_VERSION, options)
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
     res = {}
-    res[:snapshot_id] = xml_doc.elements['//snapshotId'].text
-    res[:volume_id] = xml_doc.elements['//volumeId'].text
-    res[:status] = xml_doc.elements['//status'].text
-    res[:start_time] = xml_doc.elements['//startTime'].text
-    res[:progress] = xml_doc.elements['//progress'].text
+    res[:snapshot_id] = xml_doc.at('//snapshotId').text
+    res[:volume_id] = xml_doc.at('//volumeId').text
+    res[:status] = xml_doc.at('//status').text
+    res[:start_time] = xml_doc.at('//startTime').text
+    res[:progress] = xml_doc.at('//progress').text
     res
   end
 
@@ -928,8 +930,8 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
-    return xml_doc.elements['//return'].text == 'true'
+    xml_doc = Nokogiri.XML(response.body)
+    return xml_doc.at('//return').text == 'true'
   end
 
   def describe_snapshots(*snapshot_ids)
@@ -941,17 +943,17 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
     snapshots = []
-    xml_doc.elements.each('//snapshotSet/item') do |elem|
+    xml_doc.search('//snapshotSet/item').each do |elem|
       snapshots << {
-      :snapshot_id => elem.elements['snapshotId'].text,
-      :volume_id => elem.elements['volumeId'].text,
-      :status => elem.elements['status'].text,
-      :start_time => elem.elements['startTime'].text,
-      :progress =>  elem.elements['progress'].text,    
-      :owner_id => elem.elements['ownerId'].text,
-      :description => elem.elements['description'].text,
+      :snapshot_id => elem.at('snapshotId').text,
+      :volume_id => elem.at('volumeId').text,
+      :status => elem.at('status').text,
+      :start_time => elem.at('startTime').text,
+      :progress =>  elem.at('progress').text,    
+      :owner_id => elem.at('ownerId').text,
+      :description => elem.at('description').text,
       }
     end
     return snapshots
@@ -966,17 +968,17 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
-    result = {:id => xml_doc.elements['//snapshotId'].text}
+    result = {:id => xml_doc.at('//snapshotId').text}
 
-    if xml_doc.elements['//createVolumePermission']
+    if xml_doc.at('//createVolumePermission')
       result[:create_volume_user] = []
       result[:create_volume_group] = []
-      xml_doc.elements.each('//createVolumePermission/item') do |lp|
+      xml_doc.search('//createVolumePermission/item').each do |lp|
         elems = lp.elements
-        result[:create_volume_group] << elems['group'].text if elems['group']
-        result[:create_volume_user] << elems['userId'].text if elems['userId']
+        result[:create_volume_group] << elems.at('group').text if elems.at('group')
+        result[:create_volume_user] << elems.at('userId').text if elems.at('userId')
       end
     end
 
