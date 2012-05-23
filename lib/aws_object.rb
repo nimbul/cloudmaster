@@ -25,9 +25,9 @@ class AwsObject
 
   def self.parse_xml xml_doc
     object_name = deparserize(self.name)
-    member_element = @xml_member_element || "//#{object_name}s/member"
+    member_element = @xml_member_element || "#{object_name}s/member"
     objects = []
-    xml_doc.elements.each(member_element) do |elem|
+    xml_doc.search(member_element).each do |elem|
       objects << new(elem)
     end
     return objects

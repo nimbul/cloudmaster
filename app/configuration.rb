@@ -18,7 +18,7 @@ module Cloudmaster
       @default = {}
       @opts = opts
       # search for config files in this directory too
-      super(config_files, [ File.dirname(__FILE__)])
+      super(config_files, [ File.dirname(__FILE__), File.expand_path(File.join(File.dirname(__FILE__), '..', 'test'))])
       @default.merge!({:user_data => { 
         :aws_env => @aws[:aws_env],
         :aws_access_key => @aws[:aws_access_key],

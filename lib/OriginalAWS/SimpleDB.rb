@@ -6,6 +6,7 @@
 # The SimpleDB module implements the Query API of the Amazon SimpleDB
 # Service.
 
+require 'nokogiri'
 require 'AWS/AWS'
 require 'bigdecimal'
 
@@ -24,11 +25,11 @@ class SimpleDB
 
   def do_sdb_query(parameters)
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = REXML::Document.new(response.body)
+    xml_doc = Nokogiri.XML(response.body)
 
     @total_box_usage = 0 if @total_box_usage.nil?
 
-    @prior_box_usage = xml_doc.elements['//BoxUsage'].text.to_f
+    @prior_box_usage = xml_doc.at('BoxUsage').text.to_f
     @total_box_usage += @prior_box_usage
 
     return xml_doc
@@ -221,13 +222,13 @@ class SimpleDB
 
       xml_doc = do_sdb_query(parameters)
 
-      xml_doc.elements.each('//DomainName') do |name|
+      xml_doc.search('DomainName').each do |name|
         domain_names << name.text
       end
 
       # If we receive a NextToken element, perform a follow-up operation
       # to retrieve the next set of domain names.
-      next_token = xml_doc.elements['//NextToken/text()']
+      next_token = xml_doc.at('NextToken/text()')
       more_domains = !next_token.nil?
     end
 
@@ -328,9 +329,9 @@ class SimpleDB
     xml_doc = do_sdb_query(parameters)
 
     attributes = {}
-    xml_doc.elements.each('//Attribute') do |attribute_node|
-      attr_name = attribute_node.elements['Name'].text
-      value = attribute_node.elements['Value'].text
+    xml_doc.search('Attribute').each do |attribute_node|
+      attr_name = attribute_node.at('Name').text
+      value = attribute_node.at('Value').text
 
       if respond_to? :decode_attribute_value
         # Automatically decode attribute values if the method
@@ -379,12 +380,12 @@ class SimpleDB
 
       xml_doc = do_sdb_query(parameters)
 
-      xml_doc.elements.each('//ItemName') do |item_name|
+      xml_doc.search('ItemName').each do |item_name|
         item_names << item_name.text
       end
 
-      if xml_doc.elements['//NextToken']
-        next_token = xml_doc.elements['//NextToken'].text.gsub("\n","")
+      if xml_doc.at('NextToken')
+        next_token = xml_doc.at('NextToken').text.gsub("\n","")
         more_items = options[:fetch_all]
       else
         more_items = false
@@ -418,13 +419,13 @@ class SimpleDB
 
       xml_doc = do_sdb_query(parameters)
 
-      xml_doc.elements.each('//Item') do |item_node|
-        item = {'name' => item_node.elements['Name'].text}
+      xml_doc.search('//Item').each do |item_node|
+        item = {'name' => item_node.at('Name').text}
             
         attributes = {}
-        item_node.elements.each('Attribute') do |attribute_node|
-          attr_name = attribute_node.elements['Name'].text
-          value = attribute_node.elements['Value'].text
+        item_node.search('Attribute').each do |attribute_node|
+          attr_name = attribute_node.at('Name').text
+          value = attribute_node.at('Value').text
 
           if respond_to? :decode_attribute_value
             # Automatically decode attribute values if the method
@@ -446,8 +447,8 @@ class SimpleDB
         items << item
       end
 
-      if xml_doc.elements['//NextToken']
-        next_token = xml_doc.elements['//NextToken'].text.gsub("\n","")
+      if xml_doc.at('NextToken')
+        next_token = xml_doc.at('NextToken').text.gsub("\n","")
         more_items = options[:fetch_all]
       else
         more_items = false

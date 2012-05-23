@@ -1,7 +1,7 @@
-$:.unshift(File.join(ENV['AWS_HOME'], "app"))
+$LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', 'app'))
+require 'nokogiri'
 require 'test/unit'
 require 'stringio'
-require 'rexml/document'
 require 'time'
 require 'MockAWS/clock'
 require 'logger_factory'
@@ -12,7 +12,7 @@ require 'aws_context'
 require 'pp'
 
 # Test the Cloudmaster class.
-class CloudmasterTests < Test::Unit::TestCase
+class TestCloudmaster < Test::Unit::TestCase
   def setup
     # Append output to string
     LoggerFactory.setup("/tmp/test.out")
@@ -84,20 +84,15 @@ class CloudmasterTests < Test::Unit::TestCase
   # Send a message on the primes status queue.
   def send_status_message_lifeguard(inst, load = 1)
     url = "http://queue.amazonaws.com/A13T024T56MRDC/primes-status-test"
-    doc = REXML::Document.new
-    is = doc.add_element 'InstanceStatus'
-    iid = is.add_element 'InstanceId'
-    iid.add_text inst
-    st = is.add_element 'State'
-    st.add_text 'busy'
-    li = is.add_element 'LastInterval'
-    li.add_text 'PT60S'
-    ts = is.add_element 'Timestamp'
-#    ts.add_text(Time.now.xmlschema)
-    ts.add_text(Clock.now.time.to_s)
-    body = String.new
-    doc.write(body, 2)
-    @sqs.send_message(url, body)
+    doc = Nokogiri::XML::Builder.new { |xml|
+      xml.InstanceStatus {
+        xml.InstanceId inst
+        xml.State 'busy'
+        xml.LastInterval 'PT605'
+        xml.Timestamp Clock.now.time.to_s
+      }
+    }
+    @sqs.send_message(url, doc.to_xml)
   end
 
   # Send a message on the fib status queue.
@@ -313,9 +308,8 @@ class CloudmasterTests < Test::Unit::TestCase
 
   # verify handling status message
   def test_status_message_lifeguard
-    configure([:primes]);
+    configure([:primes]); startup
     @cfg.pools[0][:status_parser] = 'lifeguard'
-    startup
     send_work
     @ps.run(Clock.at(65))
     @ps.run(Clock.at(125))

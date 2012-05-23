@@ -1,0 +1,4 @@
+Testing
+=======
+
+Note about testing - ensure that a copy of the .ini files that are in the *test* directory are copied either into the base directory of the application, or into your ENV['HOME'] location.

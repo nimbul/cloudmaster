@@ -73,7 +73,7 @@ module AwsApiActions
 
           parameters = build_query_params(api_version, signature_version, ps)
           response = do_query(http_method, endpoint_uri, parameters)
-          result = REXML::Document.new(response.body)
+          result = Nokogiri.XML(response.body)
 
           # try to return a result object
           begin

@@ -2,17 +2,17 @@
 $LOAD_PATH.unshift File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
 require 'test/unit/testsuite'
 
-require 'configuration-test'
-require 'instance-test'
-require 'instance-pool-test'
-require 'enumerator-test'
-require 'named-queue-test'
-require 'job-policy-test'
-require 'resource-policy-tests'
-require 'fixed-policy-tests'
-require 'daytime-policy-tests'
-require 'manual-policy-tests'
-require 'cloudmaster-tests'
+#require 'configuration-test'
+#require 'instance-test'
+#require 'instance-pool-test'
+#require 'enumerator-test'
+#require 'named-queue-test'
+#require 'job-policy-test'
+#require 'resource-policy-tests'
+#require 'fixed-policy-tests'
+#require 'daytime-policy-tests'
+#require 'manual-policy-tests'
+require 'test_cloudmaster'
 
 # Clear out putput file to start with
 File.new("/tmp/test.out", "w").close
