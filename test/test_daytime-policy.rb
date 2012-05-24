@@ -9,7 +9,7 @@ require 'pp'
 
 # Test the DaytimePolicy class.
 # This class is an example of adding an additional policy to the system.
-class DaytimePolicyTests < Test::Unit::TestCase
+class TestDaytimePolicy < Test::Unit::TestCase
   def setup
     LoggerFactory.setup("/tmp/test.out")
     logf = LoggerFactory.create(:file)

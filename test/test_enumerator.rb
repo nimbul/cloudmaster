@@ -8,7 +8,7 @@ require 'ec2_image_enumerator'
 require 'pp'
 
 # tests the EC2ImageEnumerator and the C2InstanceEnumerators.
-class EnumeratorTests < Test::Unit::TestCase
+class TestEnumerator < Test::Unit::TestCase
   def setup
     LoggerFactory.setup("/tmp/test.out")
     logf = LoggerFactory.create(:file)

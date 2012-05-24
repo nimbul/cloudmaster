@@ -10,7 +10,7 @@ require 'pp'
 # Test that the standard policy classes can be created, and have the
 # right class names.  This tests the dynamic loading of the policy code.
 # It tests the job and resource policies, as well as the fixed policy.
-class FixedPolicyTests < Test::Unit::TestCase
+class TestFixedPolicy < Test::Unit::TestCase
   def startup(pool)
     LoggerFactory.setup("/tmp/test.out")
     logf = LoggerFactory.create(:file)

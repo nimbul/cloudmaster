@@ -7,7 +7,7 @@ require 'pool_configuration'
 require 'pp'
 
 # Test the Instance class.
-class InstanceTests < Test::Unit::TestCase
+class TestInstance < Test::Unit::TestCase
   def setup
     Clock.set(0)
     config_files = ['aws-config.ini', 'default-config.ini', 'test-config.ini']

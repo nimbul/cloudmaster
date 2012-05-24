@@ -10,7 +10,7 @@ require 'pp'
 
 # Test the JobPolicy class.
 # Make sure it adjusts the number of instances appropriately in all cases.
-class JobPolicyTests < Test::Unit::TestCase
+class TestJobPolicy < Test::Unit::TestCase
   def setup
     LoggerFactory.setup("/tmp/test.out")
     logf = LoggerFactory.create(:file)

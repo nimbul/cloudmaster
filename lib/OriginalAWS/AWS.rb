@@ -15,7 +15,6 @@ require 'cgi'
 require 'net/https'
 require 'time'
 require 'uri'
-require 'rexml/document'
 
 $KCODE = 'u' # Enable Unicode (international character) support
 

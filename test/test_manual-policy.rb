@@ -10,7 +10,7 @@ require 'pp'
 
 # Test the ManualPolicy class.
 # Make sure it adjusts the number of instances appropriately in all cases.
-class ManualPolicyTests < Test::Unit::TestCase
+class TestManualPolicy < Test::Unit::TestCase
   def setup
     LoggerFactory.setup("/tmp/test.out")
     logf = LoggerFactory.create(:file)

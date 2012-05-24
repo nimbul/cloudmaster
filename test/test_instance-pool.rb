@@ -8,7 +8,7 @@ require 'aws_context'
 require 'pp'
 
 # Test the InstancePool class.
-class InstancePoolTests < Test::Unit::TestCase
+class TestInstancePool < Test::Unit::TestCase
   def setup
     LoggerFactory.setup("/tmp/test.out")
     logf = LoggerFactory.create(:file)

@@ -7,7 +7,7 @@ require 'named_queue'
 require 'pp'
 
 # test the NamedQueue implementation.
-class NamedQueueTests < Test::Unit::TestCase
+class TestNamedQueue < Test::Unit::TestCase
   def setup
     LoggerFactory.setup("/tmp/test.out")
     logf = LoggerFactory.create(:file)

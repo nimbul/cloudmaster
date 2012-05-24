@@ -10,7 +10,7 @@ require 'reporter'
 
 # Test the ConfigInfo class.  
 # This also test InifileConfig
-class ConfigInfoTests < Test::Unit::TestCase
+class TestConfigInfo < Test::Unit::TestCase
   def setup
     LoggerFactory.setup("/tmp/test.out")
     logf = LoggerFactory.create(:file)

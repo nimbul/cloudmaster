@@ -9,7 +9,7 @@ require 'aws_context'
 require 'pp'
 
 # test the PolicyResource class.
-class ResourcePolicyTests < Test::Unit::TestCase
+class TestResourcePolicy < Test::Unit::TestCase
   def setup
     LoggerFactory.setup("/tmp/test.out")
     logf = LoggerFactory.create(:file)
