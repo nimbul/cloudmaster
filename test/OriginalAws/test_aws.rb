@@ -3,6 +3,9 @@
 #         AWS::ServiceError:    0 /   16 =   0.00%
 #                       AWS:    0 /    1 =   0.00%
 
+require 'digest/sha1'
+require 'base64'
+
 require 'test/unit/testcase'
 require 'test/unit' if $0 == __FILE__
 
@@ -15,28 +18,8 @@ class TestAws < Test::Unit::TestCase
     @aws.extend(AWS)
   end
 
-  def teardown
-    @aws = nil
-  end
-
   def test_adjust_time
     raise NotImplementedError, 'Need to write test_adjust_time'
-  end
-
-  def test_aws_access_key
-    raise NotImplementedError, 'Need to write test_aws_access_key'
-  end
-
-  def test_aws_access_key_equals
-    raise NotImplementedError, 'Need to write test_aws_access_key_equals'
-  end
-
-  def test_aws_secret_key
-    raise NotImplementedError, 'Need to write test_aws_secret_key'
-  end
-
-  def test_aws_secret_key_equals
-    raise NotImplementedError, 'Need to write test_aws_secret_key_equals'
   end
 
   def test_build_query_params
@@ -59,60 +42,211 @@ class TestAws < Test::Unit::TestCase
     raise NotImplementedError, 'Need to write test_current_time'
   end
 
-  def test_debug
-    raise NotImplementedError, 'Need to write test_debug'
-  end
-
-  def test_debug_equals
-    raise NotImplementedError, 'Need to write test_debug_equals'
-  end
-
   def test_debug_request
     raise NotImplementedError, 'Need to write test_debug_request'
   end
 
   def test_debug_response
-    raise NotImplementedError, 'Need to write test_debug_response'
+    any_instance_of(IO) { |out|
+      stub(out).puts "\nRESPONSE\n========"
+      stub(out).puts { |x|
+        raise "Unexpected string passed to puts: '#{x}'"
+      }
+    }
   end
 
   def test_do_query
     raise NotImplementedError, 'Need to write test_do_query'
   end
 
-  def test_do_rest
-    raise NotImplementedError, 'Need to write test_do_rest'
+  def test_do_rest_PUT_failure
+    raise NotImplementedError
+  end
+
+  def test_do_rest_POST_failure
+    raise NotImplementedError
+  end
+
+  def test_do_rest_GET_failure
+    raise NotImplementedError
+  end
+
+  def test_do_rest_secure_POST_failure
+    mock_failure_http
+    params = prepare_aws_for_request
+    assert_raise(AWS::ServiceError) {
+      @aws.do_rest('POST', params[:uri], 'test', params[:headers])
+    }
+  end
+
+  def test_do_rest_PUT
+    mock_success_http
+    params = prepare_aws_for_request
+    resp = @aws.do_rest('PUT', params[:uri], 'test', params[:headers])
+    assert_equal resp.code, '200'
+  end
+
+  def test_do_rest_GET
+    mock_success_http
+    params = prepare_aws_for_request
+    resp = @aws.do_rest('GET', params[:uri], 'test', params[:headers])
+    assert_equal resp.code, '200'
+  end
+
+  def test_do_rest_POST
+    mock_success_http
+    params = prepare_aws_for_request
+    resp = @aws.do_rest('POST', params[:uri], 'test', params[:headers])
+    assert_equal resp.code, '200'
+  end
+
+  def test_do_rest_secure_POST
+    mock_success_http
+    @aws.secure_http = true
+    params = prepare_aws_for_request
+    @aws.do_rest('POST', params[:uri], 'test', params[:headers])
   end
 
   def test_encode_base64
-    raise NotImplementedError, 'Need to write test_encode_base64'
+    assert_equal @aws.encode_base64('test'), 'dGVzdA=='
   end
 
   def test_generate_rest_signature
-    raise NotImplementedError, 'Need to write test_generate_rest_signature'
+    @aws.aws_access_key = 'test'
+    @aws.aws_secret_key = 'test'
+    headers = {
+      'Date' => 'Feb 22, 1203'
+    }
+    assert_equal @aws.generate_rest_signature('POST', URI('https://blablahlasd.com:443'), headers), 'MhT5YWEw/g/Q39yZBFW1dRwsvGI='
+  end
+
+  def test_generate_signature_wo_aws_access_key
+    @aws.aws_access_key = nil
+    @aws.aws_secret_key = 'test'
+    assert_raise(RuntimeError, 'aws_access_key is not set') {
+      @aws.generate_signature 'test'
+    }
+  end
+
+  def test_generate_signature_wo_aws_secretkey
+    @aws.aws_access_key = 'test'
+    @aws.aws_secret_key = nil
+    assert_raise(RuntimeError, 'aws_secret_key is not set') {
+      @aws.generate_signature 'test'
+    }
   end
 
   def test_generate_signature
-    raise NotImplementedError, 'Need to write test_generate_signature'
+    @aws.aws_access_key = 'test'
+    @aws.aws_secret_key = 'test'
+    assert_equal @aws.generate_signature('test'), 'DJRRXBXlCVuKh6ULoN87847QX+Y='
   end
 
-  def test_secure_http
-    raise NotImplementedError, 'Need to write test_secure_http'
+  def test_sign_HmacSHA1
+    assert_equal @aws.sign('test', 'test', :HmacSHA1), 'DJRRXBXlCVuKh6ULoN87847QX+Y='
   end
 
-  def test_secure_http_equals
-    raise NotImplementedError, 'Need to write test_secure_http_equals'
+  def test_sign_HmacSHA256
+    assert_equal @aws.sign('test', 'test', :HmacSHA256), 'iM0hCLU0fZc885zfkFPX3UJwSHbYyam9ji0WglnT3fc='
   end
 
-  def test_sign
-    raise NotImplementedError, 'Need to write test_sign'
+  def test_sign_unknown
+    assert_raise(RuntimeError, "Non-supported signing method specified") {
+      @aws.sign('test', 'test', :other)
+    }
   end
 
-  def test_signParameters
-    raise NotImplementedError, 'Need to write test_signParameters'
+  def test_signParameters_v0
+    params = signing_parameters.merge({'SignatureVersion' => '0'})
+    assert_equal @aws.signParameters(params, 'test'), 'O7bUFlhXEkNi8FTgwOTIe0yofk4='
   end
 
-  def test_time_offset
-    raise NotImplementedError, 'Need to write test_time_offset'
+  def test_signParameters_v1
+    params = signing_parameters.merge({'SignatureVersion' => '1'})
+    assert_equal @aws.signParameters(params, 'test'), 'HavwU4YlrLv4hYq3LIiqDHZPbmc='
+  end
+
+  def test_signParameters_v2
+    params = signing_parameters.merge({'SignatureVersion' => '2', 'SignatureMethod' => :HmacSHA256})
+    assert_equal @aws.signParameters(params, 'test', 'https://blahblahblah.com'), 'hJcJRuRu6lTT8c5ng81WNGiWnii23kV6v/qKDEs4vEU='
+  end
+
+  private
+
+  def mock_response code, message, headers, body, klass
+    any_instance_of(klass) { |o|
+      stub(o).code.any_times { code.to_s }
+      stub(o).message.any_times { message }
+      stub(o).headers.any_times {
+        {
+          'connection'        => 'close',
+          'content-type'      => 'application/xml',
+          'server'            => 'AmazonS3',
+          'x-amz-id-2'        => 'ZxyX5379EfNgYOSTuwXWhMn0fspj2BIfEWuS+PPtoeS2wUrekPCtChDNh+LeJdmJ',
+          'transfer-encoding' => 'chunked',
+          'date'              => 'Thu, 24 May 2012 15:35:54 GMT',
+          'x-amz-request-id'  => '4F421D6B6B2A8D72',
+        }.merge(headers)
+      }
+      stub(o).body.any_times {body}
+    }
+  end
+
+  def mock_error_response code=400, message='Bad Request', headers={}, body=nil
+    body ||= <<-BODY
+<?xml version='1.0' encoding='UTF-8'?>
+<Error><Code>InvalidLocationConstraint</Code><Message>The specified location-constraint is not valid</Message><LocationConstraint>asdsd</LocationConstraint><RequestId>4F421D6B6B2A8D72</RequestId><HostId>ZxyX5379EfNgYOSTuwXWhMn0fspj2BIfEWuS+PPtoeS2wUrekPCtChDNh+LeJdmJ</HostId></Error>
+    BODY
+    mock_response(code, message, headers, body, Net::HTTPError)
+  end
+
+  def mock_success_response code='200', message='Success', headers={}, body=nil
+    body ||= <<-BODY
+<?xml version='1.0' encoding='UTF-8'?>
+<Error><Code>InvalidLocationConstraint</Code><Message>The specified location-constraint is not valid</Message><LocationConstraint>asdsd</LocationConstraint><RequestId>4F421D6B6B2A8D72</RequestId><HostId>ZxyX5379EfNgYOSTuwXWhMn0fspj2BIfEWuS+PPtoeS2wUrekPCtChDNh+LeJdmJ</HostId></Error>
+    BODY
+    mock_response(code, message, headers, body, Net::HTTPSuccess)
+  end
+
+  def mock_success_http
+    mock_success_response
+    any_instance_of(Net::HTTP) { |o|
+      stub(o).request(duck_type(:body, :body_stream, :method, :path), anything) {
+        Net::HTTPSuccess.new 1, 2, 3
+      }
+    }
+  end
+
+  def mock_failure_http
+    mock_error_response
+    any_instance_of(Net::HTTP) { |o|
+      stub(o).request(duck_type(:body, :body_stream, :method, :path), anything) {
+        Net::HTTPError.new 1, 2
+      }
+    }
+  end
+
+  def signing_parameters
+    {
+      'SignatureVersion' => '',
+      'test1'            => '1',
+      'test2'            => '2',
+      'test3'            => '3',
+      'Signature'        => nil,
+      'Action'           => 'POST',
+      'Timestamp'        => '123123213'
+    }
+  end
+
+  def prepare_aws_for_request
+    @aws.aws_access_key = 'test'
+    @aws.aws_secret_key = 'test'
+    {
+      :uri => URI('https://testurl.com/blah/blah/blah.rb'),
+      :headers => {
+        'Date' => '123123123',
+      },
+    }
   end
 end
 

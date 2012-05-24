@@ -12,19 +12,51 @@ require 'OriginalAWS/AWS'
 class TestAws < Test::Unit::TestCase; end
 
 class TestAws::TestServiceError < Test::Unit::TestCase
+  def setup
+    @error = AWS::ServiceError.new mock_error_response
+  end
+
+  def teardown
+    @error = nil
+  end
+
   def test_aws_error_xml
-    raise NotImplementedError, 'Need to write test_aws_error_xml'
+    assert @error.aws_error_xml.to_s, mock_error_response.body
   end
 
   def test_aws_error_xml_equals
-    raise NotImplementedError, 'Need to write test_aws_error_xml_equals'
+    @error.aws_error_xml = '<XML />'
+    assert @error.aws_error_xml, '<XML />'
   end
 
   def test_response
-    raise NotImplementedError, 'Need to write test_response'
+    assert @error.response, mock_error_response
   end
 
   def test_response_equals
-    raise NotImplementedError, 'Need to write test_response_equals'
+    @error.response = 'test'
+    assert @error.response == 'test'
+  end
+
+  private
+  def mock_error_response
+    mock(o = Object.new)
+    mock(o).code.any_times { '400' }
+    mock(o).message.any_times { 'Bad Request' }
+    mock(o).headers.any_times { [
+      ['connection']['close'],
+      ['content-type']['application/xml'],
+      ['server']['AmazonS3'],
+      ['x-amz-id-2']['ZxyX5379EfNgYOSTuwXWhMn0fspj2BIfEWuS+PPtoeS2wUrekPCtChDNh+LeJdmJ'],
+      ['transfer-encoding']['chunked'],
+      ['date']['Thu, 24 May 2012 15:35:54 GMT'],
+      ['x-amz-request-id']['4F421D6B6B2A8D72'],
+    ] }
+    mock(o).body.any_times {<<-BODY
+<?xml version='1.0' encoding='UTF-8'?>
+<Error><Code>InvalidLocationConstraint</Code><Message>The specified location-constraint is not valid</Message><LocationConstraint>asdsd</LocationConstraint><RequestId>4F421D6B6B2A8D72</RequestId><HostId>ZxyX5379EfNgYOSTuwXWhMn0fspj2BIfEWuS+PPtoeS2wUrekPCtChDNh+LeJdmJ</HostId></Error>
+    BODY
+    }
+    o
   end
 end
