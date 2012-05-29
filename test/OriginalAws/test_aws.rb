@@ -19,64 +19,79 @@ class TestAws < Test::Unit::TestCase
   end
 
   def test_adjust_time
-    raise NotImplementedError, 'Need to write test_adjust_time'
+    stub(Time).httpdate { 10 } ## AWS Time
+    stub(Time).new { 5 } ## Local time
+
+    any_instance_of(Net::HTTP) { |n|
+      stub(n).send_request.stub!.header { {'Date' => ''} }
+    }
+
+    assert_equal 5, @aws.adjust_time
   end
 
   def test_build_query_params
-    raise NotImplementedError, 'Need to write test_build_query_params'
+    params = [
+      '2',
+      '1',
+      { 'Timestamp' => '123123', 'Expires' => '123125', 'Bob' => 'Joe', 'Fred' => 'Sam', 'Names' => { 'Harry' => 'Sally' }, 'Order' => [ '1', '2', '3' ] },
+      { 'Sally' => ['Fran', 'Celia', 'Shannon' ] }
+    ]
+    response = {
+      "SignatureVersion" => "1",
+      "Version"          => "2",
+      "Bob"              => "Joe",
+      "Timestamp"        => "123123",
+      "Expires"          => "123125",
+      "Sally.3"          => "Shannon",
+      "Sally.2"          => "Celia",
+      "Sally.1"          => "Fran",
+      "Fred"             => "Sam",
+      "Names.Harry"      => "Sally",
+      "Order.3"          => "3",
+      "Order.2"          => "2",
+      "Order.1"          => "1",
+      "AWSAccessKeyId"   => nil
+    }
+    assert_equal response, @aws.build_query_params(*params)
   end
 
   def test_calculateStringToSignV0
-    raise NotImplementedError, 'Need to write test_calculateStringToSignV0'
+    assert_equal 'test123213', @aws.calculateStringToSignV0({ 'Action' => 'test', 'Timestamp' => '123213' })
   end
 
   def test_calculateStringToSignV1
-    raise NotImplementedError, 'Need to write test_calculateStringToSignV1'
+    assert_equal 'AardvarktestActiontestTimestamp123123', @aws.calculateStringToSignV1({ 'Action' => 'test', 'Aardvark' => 'test', 'Timestamp' => '123123' })
   end
 
   def test_calculateStringToSignV2
-    raise NotImplementedError, 'Need to write test_calculateStringToSignV2'
+    assert_equal "POST\ntest.com\n/\nAardvark=test&Action=test&Timestamp=123123", @aws.calculateStringToSignV2({ 'Action' => 'test', 'Aardvark' => 'test', 'Timestamp' => '123123' }, URI('http://test.com'))
   end
 
-  def test_current_time
-    raise NotImplementedError, 'Need to write test_current_time'
-  end
+#  def test_current_time
+#    raise NotImplementedError, 'Need to write test_current_time'
+#  end
+#
+#  def test_debug_request
+#    raise NotImplementedError, 'Need to write test_debug_request'
+#  end
+#
+#  def test_debug_response
+#    any_instance_of(IO) { |out|
+#      stub(out).puts "\nRESPONSE\n========"
+#      stub(out).puts { |x|
+#        raise "Unexpected string passed to puts: '#{x}'"
+#      }
+#    }
+#  end
 
-  def test_debug_request
-    raise NotImplementedError, 'Need to write test_debug_request'
-  end
+#  def test_do_query
+#    raise NotImplementedError, 'Need to write test_do_query'
+#  end
 
-  def test_debug_response
-    any_instance_of(IO) { |out|
-      stub(out).puts "\nRESPONSE\n========"
-      stub(out).puts { |x|
-        raise "Unexpected string passed to puts: '#{x}'"
-      }
-    }
-  end
-
-  def test_do_query
-    raise NotImplementedError, 'Need to write test_do_query'
-  end
-
-  def test_do_rest_PUT_failure
-    raise NotImplementedError
-  end
-
-  def test_do_rest_POST_failure
-    raise NotImplementedError
-  end
-
-  def test_do_rest_GET_failure
-    raise NotImplementedError
-  end
-
-  def test_do_rest_secure_POST_failure
-    mock_failure_http
+  def test_do_rest_with_redirect
     params = prepare_aws_for_request
-    assert_raise(AWS::ServiceError) {
-      @aws.do_rest('POST', params[:uri], 'test', params[:headers])
-    }
+    mock_redirect_http
+    @aws.do_rest('POST', params[:uri], 'test', params[:headers])
   end
 
   def test_do_rest_PUT
@@ -192,12 +207,12 @@ class TestAws < Test::Unit::TestCase
     }
   end
 
-  def mock_error_response code=400, message='Bad Request', headers={}, body=nil
+  def mock_error_response code=400, message='Bad Request', headers={}, body=nil, klass=Net::HTTPError
     body ||= <<-BODY
 <?xml version='1.0' encoding='UTF-8'?>
 <Error><Code>InvalidLocationConstraint</Code><Message>The specified location-constraint is not valid</Message><LocationConstraint>asdsd</LocationConstraint><RequestId>4F421D6B6B2A8D72</RequestId><HostId>ZxyX5379EfNgYOSTuwXWhMn0fspj2BIfEWuS+PPtoeS2wUrekPCtChDNh+LeJdmJ</HostId></Error>
     BODY
-    mock_response(code, message, headers, body, Net::HTTPError)
+    mock_response(code, message, headers, body, klass)
   end
 
   def mock_success_response code='200', message='Success', headers={}, body=nil
@@ -213,6 +228,24 @@ class TestAws < Test::Unit::TestCase
     any_instance_of(Net::HTTP) { |o|
       stub(o).request(duck_type(:body, :body_stream, :method, :path), anything) {
         Net::HTTPSuccess.new 1, 2, 3
+      }
+    }
+  end
+
+  def mock_redirect_http
+    any_instance_of(Net::HTTPTemporaryRedirect) { |r|
+      stub(r).header { {'location' => 'http://redirected.com'} }
+      stub(r).location { 'http://redirected.com' }
+      stub(r).code { '307' }
+      stub(r).message { '???' }
+    }
+
+    any_instance_of(Net::HTTP) { |o|
+      stub(o).send_request("POST", "/blah/blah/blah.rb", "test", anything).times(1) {
+        Net::HTTPTemporaryRedirect.new '1', '2', '3'
+      }
+      stub(o).send_request("POST", "/", "test", anything).times(4) {
+        Net::HTTPTemporaryRedirect.new '1', '2', '3'
       }
     }
   end
