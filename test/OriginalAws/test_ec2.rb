@@ -528,7 +528,7 @@ Y9yUllzeHwz5kOefw75gQDZU5KiEdyKvu/D+dG6O0mO4xKAIcjx6+b1ejjB5bheMrVwrTg==
     </reservationSet>
 </DescribeInstancesResponse>
     BODY
-    response = [{:reservation_id=>"r-d7f6c7b5", :groups=>["sg-8b01e4e2", "sg-8b01e4e2"], :owner_id=>"119421858375", :instances=>[{:root_device_name=>"/dev/sda1", :type=>"t1.micro", :product_codes=>[], :index=>"0", :launch_time=>"2012-05-29T14:42:16.000Z", :private_ip=>"10.122.233.39", :image_id=>"ami-d7eb25be", :kernel_id=>"aki-b51cf9dc", :reason=>"", :public_ip=>"23.22.9.208", :private_dns=>"ip-10-122-233-39.ec2.internal", :state=>"running", :ramdisk_id=>"ari-b31cf9da", :architecture=>"x86_64", :public_dns=>"ec2-23-22-9-208.compute-1.amazonaws.com", :monitoring=>"disabled", :root_device_type=>"ebs", :zone=>"us-east-1a", :key_name=>"nytd.clienttech.dev", :id=>"i-df3138b9"}]}, {:reservation_id=>"r-cffdccad", :groups=>["sg-8b01e4e2", "sg-8b01e4e2"], :owner_id=>"119421858375", :instances=>[{:root_device_name=>"/dev/sda1", :type=>"t1.micro", :product_codes=>[], :index=>"0", :launch_time=>"2012-05-29T14:40:11.000Z", :private_ip=>"10.253.183.251", :image_id=>"ami-d7eb25be", :kernel_id=>"aki-b51cf9dc", :reason=>"", :public_ip=>"107.20.18.67", :private_dns=>"domU-12-31-38-01-B0-0D.compute-1.internal", :state=>"running", :ramdisk_id=>"ari-b31cf9da", :architecture=>"x86_64", :public_dns=>"ec2-107-20-18-67.compute-1.amazonaws.com", :monitoring=>"disabled", :root_device_type=>"ebs", :zone=>"us-east-1a", :key_name=>"nytd.clienttech.dev", :id=>"i-07363f61"}]}]
+    response = [{:reservation_id=>"r-d7f6c7b5", :groups=>["sg-8b01e4e2"], :owner_id=>"119421858375", :instances=>[{:root_device_name=>"/dev/sda1", :type=>"t1.micro", :product_codes=>[], :index=>"0", :launch_time=>"2012-05-29T14:42:16.000Z", :private_ip=>"10.122.233.39", :image_id=>"ami-d7eb25be", :kernel_id=>"aki-b51cf9dc", :reason=>"", :public_ip=>"23.22.9.208", :private_dns=>"ip-10-122-233-39.ec2.internal", :state=>"running", :ramdisk_id=>"ari-b31cf9da", :architecture=>"x86_64", :public_dns=>"ec2-23-22-9-208.compute-1.amazonaws.com", :monitoring=>"disabled", :root_device_type=>"ebs", :zone=>"us-east-1a", :key_name=>"nytd.clienttech.dev", :id=>"i-df3138b9"}]}, {:reservation_id=>"r-cffdccad", :groups=>["sg-8b01e4e2"], :owner_id=>"119421858375", :instances=>[{:root_device_name=>"/dev/sda1", :type=>"t1.micro", :product_codes=>[], :index=>"0", :launch_time=>"2012-05-29T14:40:11.000Z", :private_ip=>"10.253.183.251", :image_id=>"ami-d7eb25be", :kernel_id=>"aki-b51cf9dc", :reason=>"", :public_ip=>"107.20.18.67", :private_dns=>"domU-12-31-38-01-B0-0D.compute-1.internal", :state=>"running", :ramdisk_id=>"ari-b31cf9da", :architecture=>"x86_64", :public_dns=>"ec2-107-20-18-67.compute-1.amazonaws.com", :monitoring=>"disabled", :root_device_type=>"ebs", :zone=>"us-east-1a", :key_name=>"nytd.clienttech.dev", :id=>"i-07363f61"}]}]
     prep_query body
     assert_equal response, @ec2.describe_instances('i-df3138b9', 'i-07363f61')
   end
@@ -1011,18 +1011,14 @@ Y9yUllzeHwz5kOefw75gQDZU5KiEdyKvu/D+dG6O0mO4xKAIcjx6+b1ejjB5bheMrVwrTg==
         :architecture=>"i386",
         :public_dns=>"ec2-107-22-16-197.compute-1.amazonaws.com"}],
         :groups=>
-      ["sg-e6d7218f",
-        "sg-33f9475b",
-        "sg-3000aa59",
-        "sg-4a6f8e23",
-        "sg-34c1255d",
-        "sg-d5fe11bc",
+        [
         "sg-e6d7218f",
         "sg-33f9475b",
         "sg-3000aa59",
         "sg-4a6f8e23",
         "sg-34c1255d",
-        "sg-d5fe11bc"],
+        "sg-d5fe11bc",
+        ],
         :reservation_id=>"r-338cb851",
         :owner_id=>"155565490060"
     }
@@ -1233,7 +1229,7 @@ Y9yUllzeHwz5kOefw75gQDZU5KiEdyKvu/D+dG6O0mO4xKAIcjx6+b1ejjB5bheMrVwrTg==
 </RunInstancesResponse>
     BODY
     prep_query body
-    response = {:reservation_id=>"r-d7f6c7b5", :groups=>["sg-8b01e4e2", "sg-8b01e4e2"], :owner_id=>"119421858375", :instances=>[{:root_device_name=>"/dev/sda1", :type=>"t1.micro", :product_codes=>[], :index=>"0", :launch_time=>"2012-05-29T14:25:05.000Z", :image_id=>"ami-d7eb25be", :kernel_id=>"aki-b51cf9dc", :reason=>"", :private_dns=>"", :state=>"pending", :ramdisk_id=>"ari-b31cf9da", :architecture=>"x86_64", :public_dns=>"", :monitoring=>"disabled", :root_device_type=>"ebs", :zone=>"us-east-1a", :key_name=>"nytd.clienttech.dev", :id=>"i-df3138b9"}]}
+    response = {:reservation_id=>"r-d7f6c7b5", :groups=>["sg-8b01e4e2"], :owner_id=>"119421858375", :instances=>[{:root_device_name=>"/dev/sda1", :type=>"t1.micro", :product_codes=>[], :index=>"0", :launch_time=>"2012-05-29T14:25:05.000Z", :image_id=>"ami-d7eb25be", :kernel_id=>"aki-b51cf9dc", :reason=>"", :private_dns=>"", :state=>"pending", :ramdisk_id=>"ari-b31cf9da", :architecture=>"x86_64", :public_dns=>"", :monitoring=>"disabled", :root_device_type=>"ebs", :zone=>"us-east-1a", :key_name=>"nytd.clienttech.dev", :id=>"i-df3138b9"}]}
 
     assert_equal response, @ec2.run_instances('test', 1, 1, params)
   end
