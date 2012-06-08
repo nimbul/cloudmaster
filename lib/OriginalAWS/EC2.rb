@@ -103,12 +103,12 @@ class EC2
     volume = \
     Hash[ elem.children.collect { |c|
       case c.name
-      when 'volumeId' then [ :volume_id, c.text ]
-      when 'size' then [ :size, c.text ]
-      when 'status' then [ :status, c.text ]
-      when 'createTime' then [ :create_time, c.text ]
-      when 'snapshotId' then [ :snapshot_id, c.text ]
-      when 'availabilityZone' then [ :availability_zone, c.text ]
+      when 'volumeId'         then [ :volume_id         , c.text ]
+      when 'size'             then [ :size              , c.text ]
+      when 'status'           then [ :status            , c.text ]
+      when 'createTime'       then [ :create_time       , c.text ]
+      when 'snapshotId'       then [ :snapshot_id       , c.text ]
+      when 'availabilityZone' then [ :availability_zone , c.text ]
       when 'attachmentSet' 
         attachment_element = c
         nil
@@ -119,11 +119,11 @@ class EC2
       Hash[
         item.children.collect { |c|
           case c.name
-          when 'volumeId' then [:volume_id, c.text]
-          when 'instanceId' then [:instance_id, c.text]
-          when 'device' then [:device, c.text]
-          when 'status' then [:status, c.text]
-          when 'attachTime' then [:attach_time, c.text]
+          when 'volumeId'   then [:volume_id   , c.text]
+          when 'instanceId' then [:instance_id , c.text]
+          when 'device'     then [:device      , c.text]
+          when 'status'     then [:status      , c.text]
+          when 'attachTime' then [:attach_time , c.text]
           end
         }
       ]
@@ -469,48 +469,69 @@ class EC2
 
   def describe_security_groups(*security_group_names)
     parameters = build_query_params(API_VERSION, SIGNATURE_VERSION,
-      {
-      'Action' => 'DescribeSecurityGroups',
-      },{
-      'GroupName' => security_group_names,
-      })
+                                     {
+                                     'Action' => 'DescribeSecurityGroups',
+                                     },
+                                     {
+                                     'GroupName' => security_group_names,
+                                     }
+                                   )
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = parse_xml(response.body)
-
-    security_groups = []
-    xml_doc.search('securityGroupInfo/item').each do |sec_group|
-      grants = []
-      sec_group.search('ipPermissions/item').each do |item|
-        grant = {}
-        grant[:protocol] = item.at('ipProtocol').text if item.elements.at('ipProtocol')
-        grant[:from_port] = item.at('fromPort').text if item.elements.at('fromPort')
-        grant[:to_port] = item.at('toPort').text if item.elements.at('toPort')
-
-        item.search('groups/item').each do |group|
-          g = {}
-          g[:user_id] = group.at('userId').text if group.elements.at('userId')
-          g[:name] = group.at('groupName').text if group.elements.at('groupName')
-          (grant[:groups] ||= []) << g
-        end
-
-        item.search('ipRanges/item').each do |iprange|
-          (grant[:ip_range] ||= []) << iprange.at('cidrIp').text
-        end
-
-        grants << grant
-      end
-
-      security_groups << {
-        :group_id => sec_group.at('groupId').text,
-        :name => sec_group.at('groupName').text,
-        :description => sec_group.at('groupDescription').text,
-        :owner_id => sec_group.at('ownerId').text,
-        :grants => grants
+    parse_xml(response.body).at('securityGroupInfo').children.collect { |item|
+      Hash[
+        item.children.collect { |section|
+          case section.name
+          when 'ipPermissions'
+            [
+              :grants,
+              section.children.collect { |item|
+                Hash[
+                  item.children.collect { |rule|
+                    case rule.name
+                    when 'ipProtocol' then [:protocol  , rule.text]
+                    when 'fromPort'   then [:from_port , rule.text]
+                    when 'toPort'     then [:to_port   , rule.text]
+                    when 'groups'
+                      if rule.children.count > 0
+                        [ :groups,
+                          rule.children.collect { |gitem|
+                            Hash[
+                              gitem.children.collect { |id|
+                                case id.name
+                                when 'userId'    then [:user_id   , id.text]
+                                #when 'groupId'   then [:group_id  , id.text]
+                                when 'groupName' then [:name      , id.text]
+                                when 'ipRange'   then nil
+                                end
+                              }
+                            ]
+                          }
+                        ]
+                      end
+                    when 'ipRanges'
+                      if rule.children.count > 0
+                        [ :ip_range,
+                          rule.children.collect { |ipitem|
+                            ipitem.children.collect { |ip|
+                              ip.text if ip.name == 'cidrIp'
+                            }
+                          }.flatten
+                        ]
+                      end
+                    end
+                  }
+              ]
+            }
+          ]
+          when 'ownerId'          then [:owner_id    , section.text]
+          when 'groupId'          then [:group_id    , section.text]
+          when 'groupName'        then [:name        , section.text]
+          when 'groupDescription' then [:description , section.text]
+          end
+          }
+        ]
       }
-    end
-
-    return security_groups
   end
 
   def revoke_ingress_by_cidr(group_name, ip_protocol, from_port,
@@ -934,20 +955,22 @@ class EC2
       })
 
     response = do_query(HTTP_METHOD, ENDPOINT_URI, parameters)
-    xml_doc = parse_xml(response.body)
-    snapshots = []
-    xml_doc.search('snapshotSet/item').each do |elem|
-      snapshots << {
-      :snapshot_id => elem.at('snapshotId').text,
-      :volume_id => elem.at('volumeId').text,
-      :status => elem.at('status').text,
-      :start_time => elem.at('startTime').text,
-      :progress =>  elem.at('progress').text,    
-      :owner_id => elem.at('ownerId').text,
-      :description => elem.at('description').text,
-      }
+    set = parse_xml(response.body).at('snapshotSet')
+    set.children.select { |c| c.name == 'item' }.collect do |item|
+      Hash[
+        item.children.collect { | elem |
+          case elem.name
+          when 'snapshotId'  then [ :snapshot_id , elem.text ]
+          when 'volumeId'    then [ :volume_id   , elem.text ]
+          when 'status'      then [ :status      , elem.text ]
+          when 'startTime'   then [ :start_time  , elem.text ]
+          when 'progress'    then [ :progress    , elem.text ]
+          when 'ownerId'     then [ :owner_id    , elem.text ]
+          when 'description' then [ :description , elem.text ]
+          end
+          }
+        ]
     end
-    return snapshots
   end
 
   def describe_snapshot_attribute(snapshot_id, attribute='createVolumePermission')
