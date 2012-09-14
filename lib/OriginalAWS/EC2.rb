@@ -752,7 +752,7 @@ class EC2
     xml_doc.search('addressesSet/item').each do |elem|
       addresses << {
         :public_ip => elem.at('publicIp').text,
-        :instance_id => elem.at('instanceId').text
+        :instance_id => ( elem.at('instanceId').text rescue '' )
       }
     end
     return addresses
